@@ -1,0 +1,81 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="UTF-8">
+<title>Tシャツ金額計算機(版計算機能付き）</title>
+<style>
+    .selected {
+        background-color: #007BFF;
+        color: white;
+    }
+</style>
+<script>
+function calculatePrice(colors) {
+    var basePrice = 770;
+    var pricePerColor = 330;
+    var pricePerShirt = basePrice + (pricePerColor * colors);
+    document.getElementById('pricePerShirt').textContent = '1枚あたりの金額: ' + pricePerShirt.toLocaleString() + '円';
+    var buttons = document.getElementsByClassName('colorButton');
+    for (var i = 0; i < buttons.length; i++) {
+        buttons[i].classList.remove('selected');
+    }
+    document.getElementById('color' + colors).classList.add('selected');
+    calculateTotal();
+}
+
+function calculateTotal() {
+    var quantity = document.getElementById('quantity').value || 0;
+    var pricePerShirt = document.getElementById('pricePerShirt').textContent.replace('1枚あたりの金額: ', '').replace('円', '').replace(/,/g, '');
+    var totalPrice = pricePerShirt * quantity;
+    document.getElementById('totalPrice').textContent = '合計金額: ' + totalPrice.toLocaleString() + '円';
+}
+
+function calculateTotal() {
+    var quantity = document.getElementById('quantity').value || 0;
+    var pricePerShirt = document.getElementById('pricePerShirt').textContent.replace('1枚あたりの金額: ', '').replace('円', '').replace(/,/g, '');
+    var platePricePerShirt = document.getElementById('platePricePerShirt').textContent.replace('1枚あたりの版代: ', '').replace('円', '').replace(/,/g, '');
+    var totalPricePerShirt = parseInt(pricePerShirt) + parseInt(platePricePerShirt);
+    var totalPrice = totalPricePerShirt * quantity;
+    var totalPlatePrice = parseInt(platePricePerShirt) * quantity;
+    document.getElementById('totalPricePerShirt').textContent = '1人当たりの合計金額: ' + totalPricePerShirt.toLocaleString() + '円';
+    document.getElementById('totalPrice').textContent = '全体の合計金額: ' + totalPrice.toLocaleString() + '円';
+    document.getElementById('totalPlatePrice').textContent = '全体の版代: ' + totalPlatePrice.toLocaleString() + '円';
+}
+
+
+
+function calculatePlatePrice() {
+    var largePrice = 1540;
+    var smallPrice = 880;
+    var largePlates = document.getElementById('largePlates').value || 0;
+    var smallPlates = document.getElementById('smallPlates').value || 0;
+    var quantity = document.getElementById('quantity').value || 0;
+    var pricePerShirt = ((largePrice * largePlates) + (smallPrice * smallPlates)) / quantity;
+    var totalPlatePrice = ((largePrice * largePlates) + (smallPrice * smallPlates));
+    document.getElementById('platePricePerShirt').textContent = '1枚あたりの版代: ' + pricePerShirt.toLocaleString() + '円';
+    document.getElementById('totalPlatePrice').textContent = '全体の版代: ' + totalPlatePrice.toLocaleString() + '円';
+    calculateTotal();
+}
+</script>
+</head>
+<body>
+<h1>Tシャツ金額計算機(版計算機能付き）</h1>
+<label for="quantity">注文するTシャツの枚数:</label>
+<input type="number" id="quantity" name="quantity" min="1" onchange="calculateTotal()">
+<br>
+<button id="color1" class="colorButton" onclick="calculatePrice(1)">1色</button>
+<button id="color2" class="colorButton" onclick="calculatePrice(2)">2色</button>
+<button id="color3"class="colorButton" onclick="calculatePrice(3)">3色</button>
+<p id="pricePerShirt"></p>
+<br>
+<label for="largePlates">大版の枚数:</label>
+<input type="number" id="largePlates" name="largePlates" min="0" onchange="calculatePlatePrice()">
+<label for="smallPlates">小版の枚数:</label>
+<input type="number" id="smallPlates" name="smallPlates" min="0" onchange="calculatePlatePrice()">
+<p id="platePricePerShirt"></p>
+<p id="totalPlatePrice"></p>
+<br>
+<p id="totalPricePerShirt"></p>
+<p id="totalPrice"></p>
+</body>
+</html>
