@@ -1,0 +1,49 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="UTF-8">
+<title>九九練習ゲーム</title>
+<style>
+  body { font-family: Arial, sans-serif; }
+  .question { margin-bottom: 10px; }
+  .result { margin-top: 20px; }
+</style>
+<script>
+  let correctCount = 0;
+  let questionsAsked = 0;
+
+  function askQuestion() {
+    if (questionsAsked < 10) {
+      const num1 = Math.floor(Math.random() * 9) + 1;
+      const num2 = Math.floor(Math.random() * 9) + 1;
+      const userAnswer = prompt(num1 + " かける " + num2 + " は？");
+      const correctAnswer = num1 * num2;
+      if (parseInt(userAnswer) === correctAnswer) {
+        correctCount++;
+        alert("正解！");
+      } else {
+        alert("不正解。正しい答えは " + correctAnswer + " です。");
+      }
+      questionsAsked++;
+      askQuestion();
+    } else {
+      document.getElementById('result').innerHTML = "10問中 " + correctCount + " 問正解しました。";
+    }
+  }
+
+  function resetGame() {
+    correctCount = 0;
+    questionsAsked = 0;
+    document.getElementById('result').innerHTML = "";
+    askQuestion();
+  }
+</script>
+</head>
+<body>
+
+<button onclick="askQuestion()">問題を始める</button>
+<button onclick="resetGame()">もう一回挑戦する</button>
+<div id="result" class="result"></div>
+
+</body>
+</html>
