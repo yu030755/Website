@@ -37,6 +37,10 @@
             cursor: pointer;
             margin: 5px;
         }
+        button.disabled {
+            background-color: #d3a8c2; /* 薄暗いピンク */
+            cursor: not-allowed;
+        }
         .retry-box {
             position: fixed;
             bottom: 10px;
@@ -50,7 +54,7 @@
         <button id="draw-button" onclick="drawOmikuji()">恋愛アドバイスをもらう</button>
         <button id="clear-history-button" onclick="clearHistory()">履歴削除</button>
         <div id="result" class="omikuji-result"></div>
-        <div>1日１回引けるよ！！</div>
+        <div id="retry-message">1日１回引けるよ！！</div>
     </div>
     <div class="history" id="history"></div>
     <div class="retry-box">
@@ -110,8 +114,11 @@
             localStorage.setItem('lastResult', result);
             localStorage.setItem('lastTime', time);
 
-            // ボタンを無効にする
-            document.getElementById("draw-button").disabled = true;
+            // ボタンを無効にし、メッセージを変更
+            const drawButton = document.getElementById("draw-button");
+            drawButton.disabled = true;
+            drawButton.classList.add("disabled");
+            document.getElementById("retry-message").innerText = "また明日挑戦してね！";
         }
 
         // 1日1回に制限するためのローカルストレージ使用
@@ -120,7 +127,11 @@
             const today = new Date().toLocaleDateString();
 
             if (lastDrawDate === today) {
-                document.getElementById("draw-button").disabled = true;
+                const drawButton = document.getElementById("draw-button");
+                drawButton.disabled = true;
+                drawButton.classList.add("disabled");
+                document.getElementById("retry-message").innerText = "また明日挑戦してね！";
+                
                 const result = localStorage.getItem('lastResult');
                 const time = localStorage.getItem('lastTime');
                 const history = document.getElementById("history");
@@ -132,11 +143,15 @@
 
         function checkRetry() {
             const input = document.getElementById("retry-input").value.toLowerCase();
+            const drawButton = document.getElementById("draw-button");
+
             if (input === "retry") {
                 localStorage.removeItem('lastDrawDate');
                 localStorage.removeItem('lastResult');
                 localStorage.removeItem('lastTime');
-                document.getElementById("draw-button").disabled = false;
+                drawButton.disabled = false;
+                drawButton.classList.remove("disabled");
+                document.getElementById("retry-message").innerText = "1日１回引けるよ！！";
                 alert("もう一度引けるようになりました！");
             } else if (input === "big") {
                 const now = new Date();
@@ -150,7 +165,6 @@
                 const entry = document.createElement("div");
                 entry.innerText = `${today} ${time} - ${result}`;
                 history.appendChild(entry);
-                alert("大大吉が表示されました！");
             }
             document.getElementById("retry-input").value = ""; // 入力をクリア
         }
