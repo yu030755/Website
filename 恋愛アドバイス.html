@@ -1,0 +1,166 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>恋愛アドバイスくじ</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            text-align: center;
+            margin-top: 50px;
+            background-color: #ffefef;
+        }
+        .omikuji-box {
+            display: inline-block;
+            padding: 20px;
+            border: 2px solid #ff1493;
+            border-radius: 10px;
+            background-color: #fff0f5;
+        }
+        .omikuji-result {
+            margin-top: 20px;
+            font-size: 1.2em;
+            color: #d00;
+        }
+        .history {
+            margin-top: 30px;
+            text-align: left;
+        }
+        button {
+            padding: 10px 20px;
+            font-size: 1em;
+            background-color: #ff69b4;
+            color: white;
+            border: none;
+            border-radius: 5px;
+            cursor: pointer;
+            margin: 5px;
+        }
+        .retry-box {
+            position: fixed;
+            bottom: 10px;
+            right: 10px;
+        }
+    </style>
+</head>
+<body>
+    <h1>恋愛アドバイスくじ</h1>
+    <div class="omikuji-box">
+        <button id="draw-button" onclick="drawOmikuji()">恋愛アドバイスをもらう</button>
+        <button id="clear-history-button" onclick="clearHistory()">履歴削除</button>
+        <div id="result" class="omikuji-result"></div>
+        <div>おみくじ作成協力者：嶺山 珠生 茂呂 さくら</div>
+    </div>
+    <div class="history" id="history"></div>
+    <div class="retry-box">
+        <input type="text" id="retry-input" placeholder="サービス用">
+        <button onclick="checkRetry()">送信</button>
+    </div>
+
+    <script>
+        const results = [
+            "大大吉: ブレーキをかけながら行く！",
+            "大吉: どう告るかは、あなた次第！",
+            "中吉: 緊張するのは、相手に気持ちがあるからです",
+            "小吉: 当たってくだけろ",
+            "末吉: 相手に執着しすぎない",
+            "凶: 「もう」なんて言うな！1秒を大切に！",
+            "大吉: なにも行動していないのに叶うと思うな！",
+            "中吉: 一旦、好きバレしろや！",
+            "小吉: 今を楽しんでください",
+            "末吉: 失敗をたくさんして成長しよう！",
+            "大吉: 進展したかったらしたほうがいい",
+            "凶: もう好きバレしろよ。どうしてしないん？？まじ全然行動してなくね？？",
+            "大吉: あとで後悔するよりもいうべき！",
+            "中吉: 恋愛は素直が一番",
+            "小吉: 立ち向かってくだけよ！！",
+            "末吉: 今のうちにたくさん失敗してください！！それで成長できます！",
+            "大吉: 有言実行",
+            "中吉: 切り替え大切",
+            "小吉: ダメでもあきらめんな",
+            "末吉: 自分の伝えたい思いを伝えな。自分の気持ちをしっかり伝えれば向こうもしっかり考えて返事っくれると思うよ。"
+        ];
+
+        function drawOmikuji() {
+            const now = new Date();
+            const today = now.toLocaleDateString();
+            const time = now.toLocaleTimeString();
+
+            // 確率を調整
+            const randomIndex = Math.floor(Math.random() * 100);
+            let result;
+            if (randomIndex < 5) {
+                result = results[0]; // 大大吉: 確率5%
+            } else {
+                const otherResults = results.slice(1);
+                result = otherResults[Math.floor(Math.random() * otherResults.length)];
+            }
+
+            document.getElementById("result").innerText = result;
+
+            // 履歴を表示
+            const history = document.getElementById("history");
+            const entry = document.createElement("div");
+            entry.innerText = `${today} ${time} - ${result}`;
+            history.appendChild(entry);
+
+            // ローカルストレージに保存
+            localStorage.setItem('lastDrawDate', today);
+            localStorage.setItem('lastResult', result);
+            localStorage.setItem('lastTime', time);
+
+            // ボタンを無効にする
+            document.getElementById("draw-button").disabled = true;
+        }
+
+        // 1日1回に制限するためのローカルストレージ使用
+        window.onload = function () {
+            const lastDrawDate = localStorage.getItem('lastDrawDate');
+            const today = new Date().toLocaleDateString();
+
+            if (lastDrawDate === today) {
+                document.getElementById("draw-button").disabled = true;
+                const result = localStorage.getItem('lastResult');
+                const time = localStorage.getItem('lastTime');
+                const history = document.getElementById("history");
+                const entry = document.createElement("div");
+                entry.innerText = `${today} ${time} - ${result}`;
+                history.appendChild(entry);
+            }
+        };
+
+        function checkRetry() {
+            const input = document.getElementById("retry-input").value.toLowerCase();
+            if (input === "retry") {
+                localStorage.removeItem('lastDrawDate');
+                localStorage.removeItem('lastResult');
+                localStorage.removeItem('lastTime');
+                document.getElementById("draw-button").disabled = false;
+                alert("もう一度引けるようになりました！");
+            } else if (input === "big") {
+                const now = new Date();
+                const today = now.toLocaleDateString();
+                const time = now.toLocaleTimeString();
+                const result = results[0]; // 大大吉を強制表示
+                document.getElementById("result").innerText = result;
+
+                // 履歴を表示
+                const history = document.getElementById("history");
+                const entry = document.createElement("div");
+                entry.innerText = `${today} ${time} - ${result}`;
+                history.appendChild(entry);
+                alert("大大吉が表示されました！");
+            }
+            document.getElementById("retry-input").value = ""; // 入力をクリア
+        }
+
+        function clearHistory() {
+            const history = document.getElementById("history");
+            while (history.firstChild) {
+                history.removeChild(history.firstChild);
+            }
+        }
+    </script>
+</body>
+</html>
