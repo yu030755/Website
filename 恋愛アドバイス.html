@@ -46,11 +46,59 @@
             bottom: 10px;
             right: 10px;
         }
+        .switch {
+            position: relative;
+            display: inline-block;
+            width: 60px;
+            height: 34px;
+        }
+        .switch input {
+            opacity: 0;
+            width: 0;
+            height: 0;
+        }
+        .slider {
+            position: absolute;
+            cursor: pointer;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background-color: #ccc;
+            transition: .4s;
+        }
+        .slider:before {
+            position: absolute;
+            content: "";
+            height: 26px;
+            width: 26px;
+            left: 4px;
+            bottom: 4px;
+            background-color: white;
+            transition: .4s;
+        }
+        input:checked + .slider {
+            background-color: #ff69b4;
+        }
+        input:checked + .slider:before {
+            transform: translateX(26px);
+        }
+        .slider.round {
+            border-radius: 34px;
+        }
+        .slider.round:before {
+            border-radius: 50%;
+        }
     </style>
 </head>
 <body>
     <h1>恋愛アドバイスくじ</h1>
     <div class="omikuji-box">
+        <label class="switch">
+            <input type="checkbox" id="ai-switch">
+            <span class="slider round"></span>
+        </label>
+        <span>AIの回答を有効にする</span>
         <button id="draw-button" onclick="drawOmikuji()">恋愛アドバイスをもらう</button>
         <button id="clear-history-button" onclick="clearHistory()">履歴削除</button>
         <div id="result" class="omikuji-result"></div>
@@ -63,7 +111,7 @@
     </div>
 
     <script>
-        const results = [
+        const basicResults = [
             "大大吉: 人生なんて楽しんだ者勝ちだわ！",
             "大吉: どう告るかは、あなた次第！",
             "中吉: 緊張するのは、相手に気持ちがあるからです",
@@ -87,20 +135,38 @@
             "中吉: 恋愛は素直が一番"
         ];
 
+        const aiResults = [
+            "大吉: あなたの魅力が輝いています！自信を持って行動しましょう。",
+            "大吉: 今日は最高の日です。心を開いて新しい出会いを楽しんで。",
+            "大吉: 大切な人にあなたの気持ちを正直に伝えてみてください。",
+            "大吉: 積極的にアプローチしてみましょう。きっと良い結果が待っています。",
+            "中吉: 焦らず、ゆっくりと関係を築いていきましょう。",
+            "中吉: 相手を理解しようとする姿勢が大切です。",
+            "小吉: 自然体で接することで、相手も心を開くでしょう。",
+            "小吉: 一歩ずつ前進することが成功の鍵です。",
+            "末吉: 小さな優しさが大きな喜びをもたらします。",
+            "末吉: 自分のペースで、無理せず進んでください。",
+            "凶: 今日は無理せず、リラックスして過ごしましょう。",
+            "凶: 思い通りにならなくても、焦らず次のチャンスを待って。",
+            "大吉: 自信を持って新しいことに挑戦しよう！",
+            "中吉: 積極的なアプローチが良い結果を生むでしょう。",
+            "小吉: 少しずつ距離を縮めてみて。",
+            "末吉: 相手を理解しようとする姿勢が大切です。",
+            "凶: 今日はリラックスして自分の時間を大切に。",
+            // ここに他のアドバイスを追加（省略のため一部のみ記載）
+        ];
+
         function drawOmikuji() {
+            const aiSwitch = document.getElementById("ai-switch").checked;
+            const results = aiSwitch ? [...basicResults, ...aiResults] : basicResults;
+
             const now = new Date();
             const today = now.toLocaleDateString();
             const time = now.toLocaleTimeString();
 
             // 確率を調整
-            const randomIndex = Math.floor(Math.random() * 100);
-            let result;
-            if (randomIndex < 5) {
-                result = results[0]; // 大大吉: 確率5%
-            } else {
-                const otherResults = results.slice(1);
-                result = otherResults[Math.floor(Math.random() * otherResults.length)];
-            }
+            const randomIndex = Math.floor(Math.random() * results.length);
+            const result = results[randomIndex];
 
             document.getElementById("result").innerText = result;
 
@@ -123,7 +189,7 @@
         }
 
         // 1日1回に制限するためのローカルストレージ使用
-        window.onload = function () {
+                window.onload = function () {
             const lastDrawDate = localStorage.getItem('lastDrawDate');
             const today = new Date().toLocaleDateString();
 
@@ -158,7 +224,7 @@
                 const now = new Date();
                 const today = now.toLocaleDateString();
                 const time = now.toLocaleTimeString();
-                const result = results[0]; // 大大吉を強制表示
+                const result = aiResults[0]; // 大大吉を強制表示
                 document.getElementById("result").innerText = result;
 
                 // 履歴を表示
