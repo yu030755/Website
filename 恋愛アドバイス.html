@@ -102,6 +102,7 @@
         <button id="draw-button" onclick="drawOmikuji()">恋愛アドバイスをもらう</button>
         <button id="clear-history-button" onclick="clearHistory()">履歴削除</button>
         <div id="result" class="omikuji-result"></div>
+	<div id="lucky-item" class="lucky-item"></div>
         <div id="retry-message">1日１回引けるよ！！</div>
     </div>
     <div class="history" id="history"></div>
@@ -156,37 +157,63 @@
             // ここに他のアドバイスを追加（省略のため一部のみ記載）
         ];
 
-        function drawOmikuji() {
-            const aiSwitch = document.getElementById("ai-switch").checked;
-            const results = aiSwitch ? [...basicResults, ...aiResults] : basicResults;
+	// ラッキーアイテムリスト
+	const luckyItems = [
+   		 "ピンク色の花",
+   		 "ネックレス",
+  		  "指輪",
+ 		   "パワーストーン",
+    		"ちいかわ",
+ 		   "はちわれ",
+  		  "ピンク系の色のシャープペンシル",
+ 		   "マフラー",
+		    "手袋",
+ 		   "ラブソング"
+	
+	];
 
-            const now = new Date();
-            const today = now.toLocaleDateString();
-            const time = now.toLocaleTimeString();
 
-            // 確率を調整
-            const randomIndex = Math.floor(Math.random() * results.length);
-            const result = results[randomIndex];
 
-            document.getElementById("result").innerText = result;
 
-            // 履歴を表示
-            const history = document.getElementById("history");
-            const entry = document.createElement("div");
-            entry.innerText = `${today} ${time} - ${result}`;
-            history.appendChild(entry);
 
-            // ローカルストレージに保存
-            localStorage.setItem('lastDrawDate', today);
-            localStorage.setItem('lastResult', result);
-            localStorage.setItem('lastTime', time);
+      function drawOmikuji() {
+    const aiSwitch = document.getElementById("ai-switch").checked;
+    const results = aiSwitch ? [...basicResults, ...aiResults] : basicResults;
 
-            // ボタンを無効にし、メッセージを変更
-            const drawButton = document.getElementById("draw-button");
-            drawButton.disabled = true;
-            drawButton.classList.add("disabled");
-            document.getElementById("retry-message").innerText = "また明日挑戦してね！";
-        }
+    // 日付と時間を取得
+    const now = new Date();
+    const today = now.toLocaleDateString();
+    const time = now.toLocaleTimeString();
+
+    // ランダムで結果を選ぶ
+    const randomIndex = Math.floor(Math.random() * results.length);
+    const result = results[randomIndex];
+
+    // ランダムでラッキーアイテムを選ぶ
+    const randomItem = luckyItems[Math.floor(Math.random() * luckyItems.length)];
+
+    // 結果とラッキーアイテムを画面に表示
+    document.getElementById("result").innerText = result;
+    document.getElementById("lucky-item").textContent = `今日のラッキーアイテム: ${randomItem}`;
+
+    // 履歴を表示
+    const history = document.getElementById("history");
+    const entry = document.createElement("div");
+    entry.innerText = `${today} ${time} - ${result}`;
+    history.appendChild(entry);
+
+    // ローカルストレージに保存
+    localStorage.setItem("lastDrawDate", today);
+    localStorage.setItem("lastResult", result);
+    localStorage.setItem("lastTime", time);
+
+    // ボタンを無効化し、再試行メッセージを表示
+    const drawButton = document.getElementById("draw-button");
+    drawButton.disabled = true;
+    drawButton.classList.add("disabled");
+    document.getElementById("retry-message").innerText = "また明日挑戦してね！";
+}
+
 
         // 1日1回に制限するためのローカルストレージ使用
                 window.onload = function () {
@@ -205,36 +232,50 @@
                 const entry = document.createElement("div");
                 entry.innerText = `${today} ${time} - ${result}`;
                 history.appendChild(entry);
+		// ラッキーアイテムも表示する const randomItem = luckyItems[Math.floor(Math.random() * luckyItems.length)]; document.getElementById("lucky-item").textContent = `今日のラッキーアイテム: ${randomItem}`
             }
         };
 
         function checkRetry() {
-            const input = document.getElementById("retry-input").value.toLowerCase();
-            const drawButton = document.getElementById("draw-button");
+    const input = document.getElementById("retry-input").value.toLowerCase();
+    const drawButton = document.getElementById("draw-button");
 
-            if (input === "retry") {
-                localStorage.removeItem('lastDrawDate');
-                localStorage.removeItem('lastResult');
-                localStorage.removeItem('lastTime');
-                drawButton.disabled = false;
-                drawButton.classList.remove("disabled");
-                document.getElementById("retry-message").innerText = "1日１回引けるよ！！";
-                alert("もう一度引けるようになりました！");
-            } else if (input === "big") {
-                const now = new Date();
-                const today = now.toLocaleDateString();
-                const time = now.toLocaleTimeString();
-                const result = aiResults[0]; // 大大吉を強制表示
-                document.getElementById("result").innerText = result;
+    if (input === "retry") {
+        // ローカルストレージをリセット
+        localStorage.removeItem("lastDrawDate");
+        localStorage.removeItem("lastResult");
+        localStorage.removeItem("lastTime");
 
-                // 履歴を表示
-                const history = document.getElementById("history");
-                const entry = document.createElement("div");
-                entry.innerText = `${today} ${time} - ${result}`;
-                history.appendChild(entry);
-            }
-            document.getElementById("retry-input").value = ""; // 入力をクリア
-        }
+        // ボタンを再び有効化
+        drawButton.disabled = false;
+        drawButton.classList.remove("disabled");
+        document.getElementById("retry-message").innerText = "1日１回引けるよ！！";
+
+        alert("もう一度引けるようになりました！");
+    } else if (input === "big") {
+        const now = new Date();
+        const today = now.toLocaleDateString();
+        const time = now.toLocaleTimeString();
+
+        // 特別な結果（大大吉）を強制表示
+        const result = aiResults[0];
+
+        // ラッキーアイテムも再生成
+        const randomItem = luckyItems[Math.floor(Math.random() * luckyItems.length)];
+        document.getElementById("result").innerText = result;
+        document.getElementById("lucky-item").textContent = `今日のラッキーアイテム: ${randomItem}`;
+
+        // 履歴に追加
+        const history = document.getElementById("history");
+        const entry = document.createElement("div");
+        entry.innerText = `${today} ${time} - ${result}`;
+        history.appendChild(entry);
+    }
+
+    // 入力フィールドをクリア
+    document.getElementById("retry-input").value = "";
+}
+
 
         function clearHistory() {
             const history = document.getElementById("history");
