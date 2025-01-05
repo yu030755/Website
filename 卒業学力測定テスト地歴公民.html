@@ -1,0 +1,669 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>卒業学力テスト　地歴公民</title>
+    <style>
+        body { font-family: Arial, sans-serif; }
+        .container { text-align: center; margin-top: 50px; }
+        .btn { display: inline-block; padding: 10px 20px; margin: 10px; background-color: #4CAF50; color: white; text-decoration: none; border-radius: 5px; }
+        .btn:hover { background-color: #45a049; }
+        .hidden { display: none; }
+        .question { margin: 20px; }
+        .feedback { font-size: 18px; margin-top: 20px; }
+        .correct { color: green; }
+        .incorrect { color: red; }
+        .score { font-size: 16px; margin-top: 20px; }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>地歴公民のテスト対策</h1>
+        <div> 
+            <a href="javascript:void(0)" class="btn" onclick="showSection('section1')">10問ずつやる</a> 
+            <a href="javascript:void(0)" class="btn" onclick="startRandomQuiz()">ランダムに50問出題</a> 
+        </div>
+
+        <div id="section1" class="hidden">
+<h3>範囲を選択してください</h3>
+<a href="javascript:void(0)" class="btn" onclick="startQuiz(0, 11)">1〜10</a>
+<a href="javascript:void(0)" class="btn" onclick="startQuiz(11, 21)">11〜20</a>
+<a href="javascript:void(0)" class="btn" onclick="startQuiz(21, 31)">21〜30</a>
+<a href="javascript:void(0)" class="btn" onclick="startQuiz(31, 41)">31〜40</a>
+<a href="javascript:void(0)" class="btn" onclick="startQuiz(41, 51)">41~50</a>
+<a href="javascript:void(0)" class="btn" onclick="startQuiz(51, 61)">51~60</a>
+<a href="javascript:void(0)" class="btn" onclick="startQuiz(61, 71)">61〜70</a>
+<a href="javascript:void(0)" class="btn" onclick="startQuiz(71, 81)">71〜80</a>
+<a href="javascript:void(0)" class="btn" onclick="startQuiz(81, 91)">81〜90</a>
+<a href="javascript:void(0)" class="btn" onclick="startQuiz(91, 99)">91〜100</a>
+
+        </div>
+
+        <div id="quiz-section" class="hidden">
+            <div id="question-container"></div>
+            <div id="feedback" class="feedback hidden"></div>
+            <div>
+                <button class="btn" id="submit-button" onclick="submitAnswer()">回答を送信</button>
+                <button class="btn hidden" id="next-button" onclick="nextQuestion()">次の問題へ</button> <!-- 次の問題へボタン -->
+            </div>
+            <div id="score" class="score"></div>
+        </div>
+
+        <div id="result-section" class="hidden">
+            <h3>結果</h3>
+            <p id="final-score"></p>
+            <a href="javascript:void(0)" class="btn" onclick="resetQuiz()">メニューに戻る</a>
+        </div>
+    </div>
+
+    <script>
+        let currentQuestions = [];
+        let currentQuestionIndex = 0;
+        let correctAnswers = 0;
+
+        // 問題データ
+const questions = [
+    { 
+        question: "世界初の産業革命を果たしたイギリスは何と呼ばれた？", 
+        correct: "世界の工場", 
+        options: ["世界の工場", "世界の中心", "産業の母", "技術の巨人"] 
+    },
+    { 
+        question: "1858年に結ばれ、日本がアメリカとの貿易を約束した条約は何？", 
+        correct: "日米修好通商条約", 
+        options: ["日米修好通商条約", "日米貿易協定", "日米友好条約", "日米平和条約"] 
+    },
+    { 
+        question: "1872年、群馬県に作られた製糸の官営模範工場の名前は？", 
+        correct: "富岡製糸場", 
+        options: ["富岡製糸場", "繭工房", "群馬製糸場", "絹の里"] 
+    },
+    { 
+        question: "アメリカ合衆国初代大統領は誰？", 
+        correct: "ワシントン", 
+        options: ["ワシントン", "ジェファーソン", "アダムス", "ハミルトン"] 
+    },
+    { 
+        question: "1789年に起こった、フランス革命の発端とされる事件を何という？", 
+        correct: "バスティーユ牢獄襲撃事件", 
+        options: ["バスティーユ牢獄襲撃事件", "革命の夜", "パリ蜂起", "民衆の怒り"] 
+    },
+    { 
+        question: "1867年10月に大政奉還の上表を提出した将軍は誰？", 
+        correct: "徳川慶喜", 
+        options: ["徳川慶喜", "徳川家定", "徳川家茂", "徳川慶安"] 
+    },
+    { 
+        question: "1868年から1869年にかけて勃発した、旧幕府軍と新政府軍の争いを何という？", 
+        correct: "戊辰戦争", 
+        options: ["戊辰戦争", "壬申の乱", "慶応戦争", "明治内戦"] 
+    },
+    { 
+        question: "1868年に明治新政府が出した5つの政治方針を何という？", 
+        correct: "五箇条の誓文", 
+        options: ["五箇条の誓文", "新政府誓約", "五訓", "御宸翰"] 
+    },
+    { 
+        question: "日本の初代内閣総理大臣は誰？", 
+        correct: "伊藤博文", 
+        options: ["伊藤博文", "山縣有朋", "大久保利通", "西郷隆盛"] 
+    },
+    { 
+        question: "1894年に朝鮮で起きた、日清戦争のきっかけとなった農民反乱を何という？", 
+        correct: "甲午農民戦争", 
+        options: ["甲午農民戦争", "壬午農民戦争", "乙未農民戦争", "庚午農民戦争"] 
+    },
+    { 
+        question: "辛亥革命の中心となった中国同盟会を結成し、三民主義を唱えた人物は誰？", 
+        correct: "孫文", 
+        options: ["孫文", "毛沢東", "蒋介石", "朱徳"] 
+    },
+    { 
+        question: "1914年に起きた、オーストリア皇位継承者夫妻がセルビア人の青年に殺害された事件を何という？", 
+        correct: "サライェヴォ事件", 
+        options: ["サライェヴォ事件", "バルカン戦争", "ガブリロ事件", "第一次世界大戦"] 
+    },
+    { 
+        question: "ボリシェヴィキの指導者で、亡命から帰還したのち十月革命で戦争の即時終結を唱えた人物は誰？", 
+        correct: "レーニン", 
+        options: ["レーニン", "トロツキー", "スターリン", "ケレンスキー"] 
+    },
+    { 
+        question: "1915年、第一次世界大戦中に中華民国に出された、日本の租借権の延長などに関する要求を何というか。", 
+        correct: "二十一カ条の要求", 
+        options: ["二十一カ条の要求", "三十一カ条の要求", "十三カ条の要求", "十七カ条の要求"] 
+    },
+    { 
+        question: "第二次護憲運動において、「憲政擁護・普選実現」を掲げた3つの政党をまとめて何という？", 
+        correct: "護憲三派", 
+        options: ["護憲三派", "護憲四派", "憲政派", "民主同盟"] 
+    },
+    { 
+        question: "ニューディール政策を行ったアメリカの大統領は誰？", 
+        correct: "フランクリン＝ローズヴェルト", 
+        options: ["フランクリン＝ローズヴェルト", "ハーバート＝フーヴァー", "ウッドロウ＝ウィルソン", "ハリー＝トルーマン"] 
+    },
+    { 
+        question: "ドイツのナチスの党首は誰？", 
+        correct: "ヒトラー", 
+        options: ["ヒトラー", "ゲッベルス", "ゲーリング", "ヒムラー"] 
+    },
+    { 
+        question: "1931年、関東軍が南満州鉄道を爆破した事件を何という？", 
+        correct: "柳条湖事件", 
+        options: ["柳条湖事件", "盧溝橋事件", "西安事件", "張鼓峰事件"] 
+    },
+    { 
+        question: "1937年に起きた、日中戦争のきっかけとなった日中両軍の衝突を何という？", 
+        correct: "盧溝橋事件", 
+        options: ["盧溝橋事件", "柳条湖事件", "上海事変", "南京事件"] 
+    },
+    { 
+        question: "イタリアのファシスト党の指導者は誰？", 
+        correct: "ムッソリーニ", 
+        options: ["ムッソリーニ", "カヴール", "ガリバルディ", "ビクトル＝エマヌエーレ2世"] 
+    },
+ { 
+        question: "太平洋戦争開戦時の日本の首相兼陸軍大臣は誰？", 
+        correct: "東条英機", 
+        options: ["東条英機", "近衛文麿", "山本五十六", "杉山元"] 
+    },
+    { 
+        question: "太平洋戦争開戦のきっかけは日本がどこを攻撃したこと？", 
+        correct: "ハワイ真珠湾", 
+        options: ["ハワイ真珠湾", "フィリピン", "ミッドウェー", "グアム"] 
+    },
+    { 
+        question: "太平洋戦争において、日本国内で唯一の地上戦が行われたのはどこ？", 
+        correct: "沖縄", 
+        options: ["沖縄", "九州", "本州", "四国"] 
+    },
+    { 
+        question: "GHQの最高司令官はだれ？", 
+        correct: "マッカーサー", 
+        options: ["マッカーサー", "アイゼンハワー", "トルーマン", "パットン"] 
+    },
+    { 
+        question: "1951年、西側諸国を中心に日本の独立を認めた条約を何という？", 
+        correct: "サンフランシスコ平和条約", 
+        options: ["サンフランシスコ平和条約", "ワシントン条約", "ジュネーブ条約", "ロンドン条約"] 
+    },
+    { 
+        question: "文化や言語の違いをこえて利用できる記号表現を何という？", 
+        correct: "ピクトグラム", 
+        options: ["ピクトグラム", "エモティコン", "サイン", "グラフィック"] 
+    },
+    { 
+        question: "ロンドンにある旧グリニッジ天文台を通る０度の経線を何という？", 
+        correct: "本初子午線", 
+        options: ["本初子午線", "赤道", "子午線", "経緯線"] 
+    },
+  { 
+        question: "太陽光線が地面にあたる角度を何という？", 
+        correct: "南中高度", 
+        options: ["南中高度", "入射角度", "反射角度", "太陽角"] 
+    },
+    { 
+        question: "太平洋上経度180度線に沿うように設定された時差を調整する線を何という？", 
+        correct: "日付変更線", 
+        options: ["日付変更線", "国際基準線", "標準時", "緯度線"] 
+    },
+    { 
+        question: "大航海時代に航海のために考案された図法を何という？", 
+        correct: "メルカトル図法", 
+        options: ["メルカトル図法", "正距方位図法", "平射図法", "コンパス図法"] 
+    },
+    { 
+        question: "衛星からの電波を受信して位置情報を得るシステムは何という？", 
+        correct: "GNSS", 
+        options: ["GNSS", "GPS", "GLONASS", "Galileo"] 
+    },
+    { 
+        question: "統計データなどのデジタル化された地理情報を加工し、分布の特色や地域の特徴を分析、察しようとするシステムを何という？", 
+        correct: "GIS", 
+        options: ["GIS", "GNSS", "GPS", "リモートセンシング"] 
+    },
+    { 
+        question: "災害発生の危険度や想定される被害の大きさなどを示した地図を何という？", 
+        correct: "ハザードマップ", 
+        options: ["ハザードマップ", "リスクマップ", "防災マップ", "危険マップ"] 
+    },
+    { 
+        question: "大雨により、水路や下水道などから水があふれて道路や住宅地が浸水する水害を何という？", 
+        correct: "内水氾濫", 
+        options: ["内水氾濫", "外水氾濫", "都市洪水", "川氾濫"] 
+    },
+    { 
+        question: "被害のおそれがない地域まで移動する避難方法を何という？", 
+        correct: "水平避難", 
+        options: ["水平避難", "垂直避難", "避難路", "緊急避難"] 
+    },
+    { 
+        question: "災害時の避難行動を時系列順に整理した災害行動計画を何という？", 
+        correct: "タイムライン", 
+        options: ["タイムライン", "避難計画", "災害マップ", "緊急行動計画"] 
+    },
+    { 
+        question: "大陸と海洋の間で、夏と冬で風向きが反対になる風を何という？", 
+        correct: "モンスーン（季節風）", 
+        options: ["モンスーン（季節風）", "貿易風", "ジェット気流", "偏西風"] 
+    },
+    { 
+        question: "ペルー沖で数年おきに発生する海水温が低くなる現象を何という？", 
+        correct: "ラニーニャ現象", 
+        options: ["ラニーニャ現象", "エルニーニョ現象", "ペルー冷水現象", "太平洋冷水現象"] 
+    },
+    { 
+        question: "持続可能な発展に配慮しているファッションを何という？", 
+        correct: "エシカルファッション", 
+        options: ["エシカルファッション", "サスティナブルファッション", "グリーンファッション", "エコファッション"] 
+    },
+  { 
+        question: "乾燥帯で見られる、砂漠周辺に広がっている丈の短い草原を何という？", 
+        correct: "ステップ", 
+        options: ["ステップ", "サバナ", "ツンドラ", "大草原"] 
+    },
+    { 
+        question: "1年間の気温と降水量をあらわしたグラフを何という？", 
+        correct: "雨温図", 
+        options: ["雨温図", "気温降水量図", "気候図", "年間天候図"] 
+    },
+    { 
+        question: "気候を反映する植生に着目し、気候区分を行ったドイツ人学者は誰か？", 
+        correct: "ケッペン", 
+        options: ["ケッペン", "ヴェゲナー", "フンボルト", "リッター"] 
+    },
+    { 
+        question: "インターネットを利用した商品の販売などの取引を総称して何という？", 
+        correct: "eコマース", 
+        options: ["eコマース", "インターネット取引", "オンラインマーケット", "ウェブショップ"] 
+    },
+    { 
+        question: "ユダヤ教やキリスト教における唯一神は何と呼ばれる？", 
+        correct: "ヤハウェ", 
+        options: ["ヤハウェ", "アッラー", "ブッダ", "キリスト"] 
+    },
+    { 
+        question: "イスラームの創始者は誰？", 
+        correct: "ムハンマド", 
+        options: ["ムハンマド", "アリー", "アブー・バクル", "ウスマーン"] 
+    },
+    { 
+        question: "仏教の開祖は誰？", 
+        correct: "ゴータマ＝シッダッタ", 
+        options: ["ゴータマ＝シッダッタ", "マハーヴィーラ", "アショーカ", "ナーガールジュナ"] 
+    },
+    { 
+        question: "縦軸に年齢、横軸に各年齢の人口比率を男女別に示したものを何という？", 
+        correct: "人口ピラミッド", 
+        options: ["人口ピラミッド", "人口グラフ", "年齢構造図", "世代別人口図"] 
+    },
+    { 
+        question: "1人の女性が一生の間に産むとされる子どもの数を示したデータは何という？", 
+        correct: "合計特殊出生率", 
+        options: ["合計特殊出生率", "出生率", "合計出生数", "特殊出生数"] 
+    },
+    { 
+        question: "人口が長期的に増減せず一定となる出生の水準を何という？", 
+        correct: "人口置換水準", 
+        options: ["人口置換水準", "出生安定水準", "人口安定水準", "出生置換率"] 
+    },
+  { 
+        question: "就職後も完全に自立せず、親と同居する人びとは何と呼ばれる？", 
+        correct: "パラサイトシングル", 
+        options: ["パラサイトシングル", "フリーター", "ニート", "アルバイト"] 
+    },
+    { 
+        question: "対立する2つ以上の欲求があり、どちらにも決定しかねる状態を何という？", 
+        correct: "コンフリクト", 
+        options: ["コンフリクト", "アンビバレンス", "フラストレーション", "ディレンマ"] 
+    },
+    { 
+        question: "不安定な心の状態を、無意識のうちに心理的な解決を図ろうとする心の動きを何という？", 
+        correct: "防衛機制", 
+        options: ["防衛機制", "自己防衛", "心理防御", "精神防衛"] 
+    },
+    { 
+        question: "歴史的に形成された社会的・文化的な性のありようを何という？", 
+        correct: "ジェンダー", 
+        options: ["ジェンダー", "セックス", "性役割", "性別"] 
+    },
+    { 
+        question: "LGBTのうち、出生時の性と自認する性が不一致な人びとは何と呼ばれる？", 
+        correct: "トランスジェンダー", 
+        options: ["トランスジェンダー", "ゲイ", "レズビアン", "バイセクシュアル"] 
+    },
+    { 
+        question: "文化の違いを認め合い、社会のなかで複数の文化が対等に共存する考えを何という？", 
+        correct: "マルチカルチュラリズム", 
+        options: ["マルチカルチュラリズム", "多文化主義", "文化多様性", "異文化共生"] 
+    },
+    { 
+        question: "社会の最大幸福を目的とし、行為がその目的にどの程度貢献しているかを正しさの基準とする考えを何という？", 
+        correct: "功利主義", 
+        options: ["功利主義", "倫理主義", "道徳主義", "義務論"] 
+    },
+    { 
+        question: "行為決定の判断基準として「最大多数の最大幸福」を主張したイギリスの哲学者は誰？", 
+        correct: "ベンサム", 
+        options: ["ベンサム", "ロック", "ホッブズ", "ミル"] 
+    },
+    { 
+        question: "快楽のうち、質の高い快楽（精神的快楽）を求めるべきと主張したイギリスの哲学者は誰？", 
+        correct: "J.S.ミル", 
+        options: ["J.S.ミル", "ベンサム", "ロック", "ホッブズ"] 
+    },
+    { 
+        question: "自由・所有権・安全および圧制への抵抗を自然権とする1789年に出された宣言を何という？", 
+        correct: "フランス人権宣言", 
+        options: ["フランス人権宣言", "アメリカ独立宣言", "イギリス大憲章", "ドイツ基本法"] 
+    },
+  { 
+        question: "代議制を重んじ、市民による抵抗権の行使を説いたイギリスの思想家は誰？", 
+        correct: "ロック", 
+        options: ["ロック", "ホッブズ", "ベンサム", "ミル"] 
+    },
+    { 
+        question: "『法の精神』を著して、絶対王政を批判したフランスの思想家は誰？", 
+        correct: "モンテスキュー", 
+        options: ["モンテスキュー", "ヴォルテール", "ルソー", "ディドロ"] 
+    },
+    { 
+        question: "私人間の人権侵害に対して、民法の規定を通じて、紛争を解決し、人権を救済しようとする考えを何という？", 
+        correct: "間接適用説", 
+        options: ["間接適用説", "直接適用説", "法の支配", "民事的統治"] 
+    },
+    { 
+        question: "親や先組を殺した者をそれ以外の殺人を犯した者よりも重く処罰することを違憲とした裁判を何という？", 
+        correct: "尊属殺人重罰規定違憲訴訟", 
+        options: ["尊属殺人重罰規定違憲訴訟", "未成年犯罪重罰訴訟", "虐待死重罰訴訟", "高齢者殺人重罰訴訟"] 
+    },
+    { 
+        question: "憲法第25条で保障される、健康で文化的な最低限度の生活を営む権利を何という？", 
+        correct: "生存権", 
+        options: ["生存権", "自由権", "財産権", "安全権"] 
+    },
+    { 
+        question: "個人が自分らしい生き方を自分自身で選択する権利を何という？", 
+        correct: "自己決定権", 
+        options: ["自己決定権", "自立権", "自主権", "選択権"] 
+    },
+    { 
+        question: "事実認定に合理的疑いがみられる場合、裁判のやり直しを行うことができる制度を何という？", 
+        correct: "再審制度", 
+        options: ["再審制度", "控訴制度", "上告制度", "再調査制度"] 
+    },
+    { 
+        question: "紛争解決に必要な情報やサービスを提供する機関は何と呼ばれる？", 
+        correct: "法テラス", 
+        options: ["法テラス", "法律サービスセンター", "司法支援センター", "法律相談所"] 
+    },
+    { 
+        question: "高度の政治的判断を要する国家の行為は司法判断になじまないとする考えを何という？", 
+        correct: "統治行為論", 
+        options: ["統治行為論", "政治行為論", "行政行為論", "司法行為論"] 
+    },
+    { 
+        question: "国家議員の特権のうち、議院内の発言や表決の責任を議外で問われないものを何という？", 
+        correct: "免責特権", 
+        options: ["免責特権", "議員特権", "発言特権", "表決特権"] 
+    },
+  { 
+        question: "官僚が退職後に企業や政府機関などの要職に就任することを何という？", 
+        correct: "天下り", 
+        options: ["天下り", "回転ドア", "再就職", "交代"] 
+    },
+    { 
+        question: "国民や住民からの訴えに基づいて、行政運営の実態を調査、是正する制度を何という？", 
+        correct: "オンブズマン制度", 
+        options: ["オンブズマン制度", "監察制度", "調査制度", "是正制度"] 
+    },
+  { 
+        question: "寄付金や会費等を財源とし、営利を目的とせず、社会的な活動を行う民間団体を何という？", 
+        correct: "NPO（非営利組織）", 
+        options: ["NPO（非営利組織）", "NGO（非政府組織）", "CSR（企業の社会的責任）", "ボランティア団体"] 
+    },
+    { 
+        question: "海洋における国家の権利で天然資源の開発が認められる水域を何というか。", 
+        correct: "EEZ（排他的経済水域）", 
+        options: ["EEZ（排他的経済水域）", "領海", "公海", "沿岸水域"] 
+    },
+    { 
+        question: "自国に対する直接攻撃でなくとも、同盟関係にある国への武力攻撃を実力で阻止する権利を何という？", 
+        correct: "集団的自衛権", 
+        options: ["集団的自衛権", "個別的自衛権", "集団的防衛権", "同盟防衛権"] 
+    },
+    { 
+        question: "条例の制定や改廃の請求を行う住民の権利を何という？", 
+        correct: "イニシアティブ", 
+        options: ["イニシアティブ", "リコール", "レファレンダム", "アジェンダ"] 
+    },
+    { 
+        question: "地方の議決機関が法律の範囲内で制定できるルールを何という？", 
+        correct: "条例", 
+        options: ["条例", "規則", "法令", "指令"] 
+    },
+    { 
+        question: "選挙で落選者に投じられた票を何という？", 
+        correct: "死票", 
+        options: ["死票", "無効票", "失効票", "欠票"] 
+    },
+    { 
+        question: "医療や教育などの形のない商品を何という？", 
+        correct: "サービス", 
+        options: ["サービス", "無形商品", "サービス商品", "非物質商品"] 
+    },
+    { 
+        question: "何かを達成するために、他の何かを犠牲にしなければならない関係を何という？", 
+        correct: "トレード・オフ", 
+        options: ["トレード・オフ", "利益相反", "バランス", "選択的相反"] 
+    },
+ { 
+        question: "企業が生産した財・サービスを消費する経済主体は何という？", 
+        correct: "家計", 
+        options: ["家計", "企業", "政府", "海外"] 
+    },
+    { 
+        question: "経済発展と生活水準の向上に必要な設備である、政府が整備する道路などのことを何という？", 
+        correct: "インフラストラクチャー", 
+        options: ["インフラストラクチャー", "公共施設", "基盤設備", "基本設備"] 
+    },
+    { 
+        question: "市場で株式を売買できるようにすることを何という？", 
+        correct: "上場", 
+        options: ["上場", "公開", "証券化", "売買許可"] 
+    },
+    { 
+        question: "物価が持続的に上昇する現象を何という？", 
+        correct: "インフレーション", 
+        options: ["インフレーション", "デフレーション", "リフレーション", "スタグフレーション"] 
+    },
+    { 
+        question: "不況と物価高が同時に進行する現象を何という？", 
+        correct: "スタグフレーション", 
+        options: ["スタグフレーション", "インフレーション", "デフレーション", "リフレーション"] 
+    },
+    { 
+        question: "個人や一般法人、地方公共団体が保有する通貨量の残高を何という？", 
+        correct: "マネーストック", 
+        options: ["マネーストック", "マネーサプライ", "通貨供給量", "現金残高"] 
+    },
+    { 
+        question: "物価下落と不況が相乗作用を起こし、悪循環に陥る現象を何という？", 
+        correct: "デフレスパイラル", 
+        options: ["デフレスパイラル", "インフレスパイラル", "スタグフレーション", "デプレッションスパイラル"] 
+    },
+    { 
+        question: "銀行が当初の預金額を上回る貸し出しを行い、預金通貨を創出する仕組みを何という？", 
+        correct: "信用創造", 
+        options: ["信用創造", "預金創造", "通貨創造", "貸出創造"] 
+    },
+    { 
+        question: "元金00万円とその利息を限度として、預金を保証する制度を何という？", 
+        correct: "ペイオフ", 
+        options: ["ペイオフ", "預金保険", "預金保証", "預金補償"] 
+    },
+    { 
+        question: "日本銀行が金融市場で手形などの有価証券を売買する金融政策を何という？", 
+        correct: "公開市場操作", 
+        options: ["公開市場操作", "政策金利操作", "資金供給操作", "利率調整操作"] 
+    },
+  { 
+        question: "租税の基本原則のうち、所得または消費支出が同じであれば相税負担も同じとする考えを何という？", 
+        correct: "水平的公平", 
+        options: ["水平的公平", "垂直的公平", "対称的公平", "同一負担原則"] 
+    },
+    { 
+        question: "景気調整のために意図的に行われる政策を何という？", 
+        correct: "フィスカル・ポリシー", 
+        options: ["フィスカル・ポリシー", "モネタリー・ポリシー", "財政政策", "金融政策"] 
+    },
+    { 
+        question: "原則禁止されている公共事業以外に用いるために発行される政府の債権を何という？", 
+        correct: "赤字国債", 
+        options: ["赤字国債", "建設国債", "特例国債", "臨時国債"] 
+    },
+    { 
+        question: "比較生産業説を主張したイギリス人経済学者は誰？", 
+        correct: "リカード", 
+        options: ["リカード", "アダム・スミス", "マルサス", "ケインズ"] 
+    },
+    { 
+        question: "各国が異なる工業製品を相互補完的に生産し、輸出入する貿易を何という？", 
+        correct: "水平的分業", 
+        options: ["水平的分業", "垂直的分業", "相互貿易", "産業分業"] 
+    },
+    { 
+        question: "外国から輸入される品物に課せられる税金を何という？", 
+        correct: "関税", 
+        options: ["関税", "輸入税", "輸出税", "付加価値税"] 
+    },
+    { 
+        question: "自国通貨と外国通貨を交換する取引を何という？", 
+        correct: "外国為替取引", 
+        options: ["外国為替取引", "通貨交換取引", "為替交換", "通貨取引"] 
+    },
+    { 
+        question: "為替相場の変動要因である各国の物価水準や金利水準、国際収支の動向を総称して何という？", 
+        correct: "ファンダメンタルズ", 
+        options: ["ファンダメンタルズ", "基本経済要因", "経済指標", "市場指標"] 
+    },
+    { 
+        question: "為替レートが、物価水準の国際的格差と同様になっていくとする考え方を何という？", 
+        correct: "購買力平価説", 
+        options: ["購買力平価説", "金利平価説", "貿易平価説", "収支平価説"] 
+    },
+    { 
+        question: "1995年にGATTの後継として新たに設立した、貿易に関する国際機関を何という？", 
+        correct: "WTO", 
+        options: ["WTO", "IMF", "OECD", "UNCTAD"] 
+    }
+];
+        // セクションを表示する関数
+        function showSection(sectionId) {
+            document.querySelectorAll('.hidden').forEach(function(section) {
+                section.classList.add('hidden');
+            });
+            document.getElementById(sectionId).classList.remove('hidden');
+        }
+
+        // ランダムに50問出題する関数
+        function startRandomQuiz() {
+            currentQuestions = questions.sort(() => 0.5 - Math.random()).slice(0, 50);
+            currentQuestions.forEach(q => shuffleArray(q.options)); // シャッフル
+            currentQuestionIndex = 0;
+            correctAnswers = 0;
+            displayQuestion();
+        }
+
+        // 特定の範囲の問題を選択して表示する関数
+        function startQuiz(start, end) {
+            if (start < 0 || end > questions.length) {
+                alert('範囲が不正です。');
+                return;
+            }
+            currentQuestions = questions.slice(start, end);
+            currentQuestions.forEach(q => shuffleArray(q.options)); // シャッフル
+            currentQuestionIndex = 0;
+            correctAnswers = 0;
+            displayQuestion();
+        }
+
+        // 配列をシャッフルする関数
+        function shuffleArray(array) {
+            for (let i = array.length - 1; i > 0; i--) {
+                const j = Math.floor(Math.random() * (i + 1));
+                [array[i], array[j]] = [array[j], array[i]];
+            }
+        }
+
+        // 問題を表示する関数
+        function displayQuestion() {
+            document.getElementById('quiz-section').classList.remove('hidden');
+            const questionContainer = document.getElementById('question-container');
+            const questionData = currentQuestions[currentQuestionIndex];
+            questionContainer.innerHTML = `
+                <div class="question">
+                    <h3>問題 ${currentQuestionIndex + 1} / ${currentQuestions.length}</h3>
+                    <p>${questionData.question}</p>
+                    ${questionData.options.map(option => 
+                        `<div><input type="radio" name="option" value="${option}">${option}</div>`
+                    ).join('')}
+                </div>
+            `;
+            document.getElementById('feedback').classList.add('hidden');
+            updateScore();
+            document.getElementById('submit-button').style.display = 'inline-block'; // 「回答を送信」ボタンを表示
+            document.getElementById('next-button').style.display = 'none'; // 初期状態では「次の問題へ」ボタンは非表示
+        }
+
+        // スコアを更新する関数
+        function updateScore() {
+            document.getElementById('score').innerHTML = `正解数: ${correctAnswers} / ${currentQuestions.length}`;
+        }
+
+        // 回答を送信する関数
+        function submitAnswer() {
+            const selectedOption = document.querySelector('input[name="option"]:checked');
+            const feedback = document.getElementById('feedback');
+
+            if (selectedOption) {
+                const selectedAnswer = selectedOption.value;
+                const correctAnswer = currentQuestions[currentQuestionIndex].correct;
+                if (selectedAnswer === correctAnswer) {
+                    correctAnswers++;
+                    feedback.innerHTML = `<span class="correct">正解</span>`;
+                } else {
+                    feedback.innerHTML = `<span class="incorrect">不正解。正答: ${correctAnswer}</span>`;
+                }
+                feedback.classList.remove('hidden');
+                document.getElementById('submit-button').style.display = 'none'; // 「回答を送信」ボタンを非表示
+                document.getElementById('next-button').style.display = 'inline-block'; // 「次の問題へ」ボタンを表示
+            } else {
+                feedback.innerHTML = `<span class="incorrect">回答を選択してください。</span>`;
+                feedback.classList.remove('hidden');
+            }
+        }
+
+        // 次の問題へ進む関数
+        function nextQuestion() {
+            currentQuestionIndex++;
+            if (currentQuestionIndex < currentQuestions.length) {
+                displayQuestion();
+            } else {
+                showSection('result-section');
+                document.getElementById('final-score').innerText = `正解数: ${correctAnswers}問`;
+                document.getElementById('next-button').style.display = 'none'; // 最後の問題では「次の問題へ」ボタンを非表示
+            }
+        }
+
+        // クイズをリセットしてメニューに戻る関数
+        function resetQuiz() {
+            document.getElementById('quiz-section').classList.add('hidden');
+            document.getElementById('result-section').classList.add('hidden');
+            document.getElementById('section1').classList.remove('hidden');
+        }
+    </script>
+</body>
+</html>
