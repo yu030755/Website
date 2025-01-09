@@ -15,7 +15,25 @@
         .correct { color: green; }
         .incorrect { color: red; }
         .score { font-size: 16px; margin-top: 20px; }
-    </style>
+
+    .option {
+        display: flex;
+        justify-content: center;
+        text-align: left;
+    }
+    .option label {
+        width: 35%; /* ラベルの幅を指定して中央に配置 */
+        text-align: left;
+        display: inline-block;
+    }
+    .option input {
+        margin-right: 10px; /* ラジオボタンとテキストの間にスペースを追加 */
+    }
+</style>
+
+
+
+
 </head>
 <body>
     <div class="container">
@@ -59,8 +77,8 @@
             <p id="final-score"></p>
             <a href="javascript:void(0)" class="btn" onclick="resetQuiz()">メニューに戻る</a>
         </div>
-    </div><br>
-<center>バグはすべて修正しました。<a href="https://www.instagram.com/yu____________07?igsh=MTkzdXFwejlwNWl3OQ%3D%3D&utm_source=qr"><br>何かあればこちらから教えてください</center>
+    </div><hr>
+<center>バグはすべて修正しました。<br>✨問題選択肢を左揃えに変更しました✨<a href="https://www.instagram.com/yu____________07?igsh=MTkzdXFwejlwNWl3OQ%3D%3D&utm_source=qr"><br>何かあればこちらから教えてください</center>
 
     <script>
         let currentQuestions = [];
@@ -609,24 +627,27 @@ const questions = [
         }
 
         // 問題を表示する関数
-        function displayQuestion() {
-            document.getElementById('quiz-section').classList.remove('hidden');
-            const questionContainer = document.getElementById('question-container');
-            const questionData = currentQuestions[currentQuestionIndex];
-            questionContainer.innerHTML = `
-                <div class="question">
-                    <h3>問題 ${currentQuestionIndex + 1} / ${currentQuestions.length}</h3>
-                    <p>${questionData.question}</p>
-                    ${questionData.options.map(option => 
-                        `<div><input type="radio" name="option" value="${option}">${option}</div>`
-                    ).join('')}
-                </div>
-            `;
-            document.getElementById('feedback').classList.add('hidden');
-            updateScore();
-            document.getElementById('submit-button').style.display = 'inline-block'; // 「回答を送信」ボタンを表示
-            document.getElementById('next-button').style.display = 'none'; // 初期状態では「次の問題へ」ボタンは非表示
-        }
+function displayQuestion() {
+    document.getElementById('quiz-section').classList.remove('hidden');
+    const questionContainer = document.getElementById('question-container');
+    const questionData = currentQuestions[currentQuestionIndex];
+    questionContainer.innerHTML = `
+        <div class="question">
+            <h3>問題 ${currentQuestionIndex + 1} / ${currentQuestions.length}</h3>
+            <p>${questionData.question}</p>
+            ${questionData.options.map(option => 
+                `<div class="option"><label><input type="radio" name="option" value="${option}">${option}</label></div>`
+            ).join('')}
+        </div>
+    `;
+    document.getElementById('feedback').classList.add('hidden');
+    updateScore();
+    document.getElementById('submit-button').style.display = 'inline-block'; // 「回答を送信」ボタンを表示
+    document.getElementById('next-button').style.display = 'none'; // 初期状態では「次の問題へ」ボタンは非表示
+}
+
+
+
 
         // スコアを更新する関数
         function updateScore() {
