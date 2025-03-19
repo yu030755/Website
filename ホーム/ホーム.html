@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>iPhone風ホーム画面</title>
+    <title>ホームメニュー</title>
     <style>
         body {
             background-color: #f1f1f1;
@@ -194,6 +194,15 @@
             color: #333;
             margin: 0;
         }
+        
+        .app-container {
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    flex-wrap: wrap; /* 必要に応じて折り返し可能 */
+    gap: 10px; /* アイコン間の距離を調整 */
+}
+
 #current-day-of-week.sunday {
     color: red; /* 日曜日は赤 */
 }
