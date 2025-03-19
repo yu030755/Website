@@ -1,0 +1,656 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>iPhone風ホーム画面</title>
+    <style>
+        body {
+            background-color: #f1f1f1;
+            font-family: Arial, sans-serif;
+            margin: 0;
+            padding: 0;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            height: 100vh;
+	    margin: 0;
+    padding: 0;
+    background-size: cover; /* 背景を画面にフィット */
+    background-position: center;
+    background-repeat: no-repeat;
+    transition: background-image 0.5s ease; /* やんわり切り替える */
+        }
+
+
+.home-screen {
+    width: 100%; /* スマホ画面全体に広げる */
+    height: 100%;
+    overflow: visible;
+    background-color: transparent; /* 背景を透明にする（必要なら） */
+    border-radius: 0; /* 丸みをなくす */
+    box-shadow: none; /* 影を消す */
+}
+
+
+       .widget-container {
+    display: grid;
+    grid-template-columns: 1fr 1.7fr;
+    grid-gap: 0px; /* ウィジェット間の隙間を調整 */
+    margin-bottom: 20px;
+    height: auto; /* 高さを自動調整 */
+}
+
+.widget {
+    background: rgba(255, 255, 255, 0.75); /* 半透明の白背景 */
+    backdrop-filter: blur(10px); /* 背景をぼかす効果 */
+    border-radius: 15px; /* 角を丸く */
+    box-shadow: 0 4px 10px rgba(0, 0, 0, 0.1); /* ソフトな影を追加 */
+    padding: 10px; /* 内側の余白 */
+    text-align: center;
+    font-size: 14px;
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    align-items: center;
+    min-height: 120px; /* 最小の高さ */
+    height: 210px; /* 高さを固定 */
+    overflow: hidden; /* はみ出しを防ぐ */
+    margin: 5px;
+}
+
+.widget .time, .widget .date, .widget .day-of-week, .widget .rokuyou {
+    font-size: 16px;
+    margin: 5px 0;
+    line-height: 1.5; /* 行間を調整 */
+}
+
+
+.calendar {
+    width: 100%; /* 親ウィジェット内に完全にフィットするよう指定 */
+    height: 100%;
+    display: grid;
+    grid-template-columns: repeat(7, 1fr); /* 7列の等分 */
+    grid-gap: 2px; /* セル間の間隔を調整 */
+    box-sizing: border-box; /* パディングやボーダーも含めて計算 */
+}
+
+
+        .calendar-header {
+            grid-column: span 7;
+            font-weight: bold;
+            text-align: center;
+            background-color: #f7f7f7;
+            padding: 5px 0;
+            display: grid;
+            grid-template-columns: repeat(7, 1fr);
+            grid-gap: 0;
+            line-height: 1;
+        }
+
+        .calendar-header div {
+            padding: 10px;
+            font-size: 16px;
+            text-align: center;
+            background-color: #e0e0e0;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            font-weight: bold;
+            letter-spacing: 6px;
+        }
+
+       .calendar div {
+    padding: 6px; /* パディングを減らして圧縮 */
+    text-align: center;
+    font-size: 12px; /* フォントサイズを小さく */
+    background-color: #e0e0e0;
+    border-radius: 3px;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+}
+
+        /* 日曜日と土曜日に色をつけるスタイル */
+        .sunday {
+            color: red;
+        }
+
+        .saturday {
+            color: blue;
+        }
+
+        /* 今日の日付に赤い丸をつけるスタイル */
+        .today {
+            position: relative;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+        }
+
+        .today::before {
+            content: '';
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            width: 22px;   /* 赤丸の直径 */
+            height: 22px;
+            background-color: red;
+            border-radius: 50%;
+            transform: translate(-50%, -50%);
+            z-index: 0; /* 赤丸を背景に配置 */
+        }
+
+        .today span {
+            color: white;
+            font-size: 16px;
+            line-height: 22px;
+            text-align: center;
+            z-index: 1; /* 日付文字を赤丸の上に表示 */
+        }
+
+        .app-grid {
+            display: grid;
+            grid-template-columns: repeat(4, 1fr);
+    grid-template-rows: repeat(auto-fill, 100px);
+            grid-gap: 50px;
+            justify-items: center;
+            flex-grow: 1;
+	    max-height: 350px;/* アプリスクロール防止 */
+            overflow-y: auto;
+     	    margin-bottom: 35px; /* 下方向の余白を調整 */
+        }
+
+        .app-icon {
+            position: relative; /* アイコンを基準にアプリ名を配置できるようにする */
+            width: 100px;
+            height: 100px;
+            background-color: #e0e0e0;
+            border-radius: 15px;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            cursor: pointer;
+            box-shadow: 0 2px 5px rgba(0, 0, 0, 0.1);
+            transition: transform 0.2s ease;
+            flex-direction: column;
+        }
+
+        .app-icon:hover {
+            transform: scale(1.1);
+        }
+
+        .app-icon img {
+            width: 40px;
+            height: 40px;
+        }
+
+        .app-name {
+            position: absolute;
+            bottom: -20px; /* アイコンの下に配置 */
+            width: 100%;
+            text-align: center;
+            font-size: 12px;
+            color: #333;
+            margin: 0;
+        }
+#current-day-of-week.sunday {
+    color: red; /* 日曜日は赤 */
+}
+
+#current-day-of-week.saturday {
+    color: blue; /* 土曜日は青 */
+}
+
+.lock-icon {
+    position: absolute; /* 親要素に相対的に配置 */
+    top: 5px; /* アイコンの上部余白 */
+    right: 5px; /* アイコンの右余白 */
+    background-color: white; /* 背景色を白にする（任意） */
+    border-radius: 50%; /* 丸い形にする */
+    padding: 3px; /* 内部余白 */
+    font-size: 12px; /* アイコンのサイズ */
+    box-shadow: 0 2px 5px rgba(0, 0, 0, 0.1); /* 影を追加（任意） */
+}
+
+.app-icon {
+    width: 70px; /* アイコンの横幅 */
+    height:70px; /* 高さを自動調整 */
+    display: flex; /* レイアウトをフレックスに変更 */
+    flex-direction: column; /* 上下に配置 */
+    align-items: center; /* 中央揃え */
+}
+
+
+.app-icon img {
+    width: 100%; /* アイコンの幅 */
+    height:100%; /* アイコンの高さ */
+    border-radius: 15px; /* 四隅を丸くする */
+    object-fit: cover; /* 画像を親要素にフィット */
+
+}
+
+
+.app-name {
+    margin-top: 8px; /* アイコンとの間隔を広げる */
+    font-size: 12px; /* 必要であればフォントサイズを調整 */
+    white-space: nowrap; /* テキストを1行に収める */
+    overflow: hidden; /* はみ出し防止 */
+    text-overflow: ellipsis; /* 長い名前を省略表示 */
+}
+
+
+.dock {
+    position: absolute; /* 画面下部に固定 */
+    bottom: 0px; /* 下からの距離を指定 */
+    left: 50%; /* 中央揃え */
+    transform: translateX(-50%); /* 中央揃えの補正 */
+    width: 80%; /* ドック全体の幅 */
+    height: 85px; /* ドックの高さ */
+    background: rgba(255, 255, 255, 0.6); /* 半透明の白 */
+    border-radius: 40px; /* 丸みを付ける */
+    display: flex; /* フレックスボックスで配置 */
+    justify-content: space-around; /* 均等に配置 */
+    align-items: center; /* 垂直方向を中央揃え */
+    box-shadow: 0 10px 15px rgba(0, 0, 0, 0.2); /* ソフトな影 */
+    backdrop-filter: blur(10px); /* 背景をぼかす */
+}
+
+.dock-icon {
+    width: 60px; /* アイコンの枠のサイズ */
+    height: 60px;
+    display: flex; /* アイコンを中央揃え */
+    justify-content: center;
+    align-items: center;
+    background-color: rgba(255, 255, 255, 0.9); /* 背景色 */
+    border-radius: 20px; /* 丸みを持たせる */
+    box-shadow: 0 5px 10px rgba(0, 0, 0, 0.1); /* 影をつける */
+}
+
+.dock-icon img {
+    width: 40px; /* アイコン画像のサイズ */
+    height: 40px;
+}
+
+        /* 背景のぼかし */
+        .blurred-background {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0, 0, 0, 0.8);
+            backdrop-filter: blur(8px); /* 画面全体をぼかす */
+            display: none; /* 初期状態では非表示 */
+            z-index: 1;
+        }
+
+        /* パスコード入力モーダル */
+        .passcode-modal {
+            position: fixed;
+            top: 50%;
+            left: 50%;
+	    width: 100%;
+	　　height: 100%;
+	    color: #fff;
+            transform: translate(-50%, -50%);
+            background: rgba(50, 50, 50, 0.9); /* 黒基調で半透明 */
+            padding: 20px;
+            border-radius: 10px;
+            text-align: center;
+            box-shadow: 0 4px 15px rgba(0, 0, 0, 0.5);
+            display: none; /* 初期状態では非表示 */
+            z-index: 2;
+        }
+
+        /* ボタンスタイル */
+        .passcode-button {
+            padding: 10px 20px;
+            font-size: 16px;
+            color: #fff;
+            background-color: #444;
+            border: none;
+            border-radius: 5px;
+            cursor: pointer;
+            transition: background-color 0.2s;
+        }
+
+        .passcode-button:hover {
+            background-color: #666;
+        }
+.key {
+    width: 60px; /* ボタンの幅 */
+    height: 60px; /* ボタンの高さ */
+    font-size: 18px; /* 文字サイズ */
+    background-color: #444; /* ボタンの背景色 */
+    color: #fff; /* 文字の色 */
+    border: none; /* ボーダーなし */
+    border-radius: 50%; /* 丸いボタン */
+    display: flex; /* 中央揃え */
+    justify-content: center;
+    align-items: center;
+    cursor: pointer; /* ポインター表示 */
+    transition: background-color 0.2s, transform 0.2s; /* ホバー＆クリック時のエフェクト */
+}
+
+.key:active {
+    background-color: #666; /* クリック時の背景色 */
+    transform: scale(0.95); /* クリック時に縮小 */
+}
+
+.keypad {
+    display: grid;
+    grid-template-areas:
+        "one two three"
+        "four five six"
+        "seven eight nine"
+        ". zero .";
+    gap: 10px; /* ボタン間の間隔 */
+    max-width: 200px;
+    margin: 0 auto;
+}
+
+.key:nth-child(1) { grid-area: one; }
+.key:nth-child(2) { grid-area: two; }
+.key:nth-child(3) { grid-area: three; }
+.key:nth-child(4) { grid-area: four; }
+.key:nth-child(5) { grid-area: five; }
+.key:nth-child(6) { grid-area: six; }
+.key:nth-child(7) { grid-area: seven; }
+.key:nth-child(8) { grid-area: eight; }
+.key:nth-child(9) { grid-area: nine; }
+.key-zero { grid-area: zero; }
+
+        .code-dots {
+            display: flex;
+            justify-content: center;
+            margin: 20px 0;
+        }
+
+        .code-dot {
+            width: 20px;
+            height: 20px;
+            margin: 0 5px;
+            background-color: #333;
+            border-radius: 50%;
+        }
+/* アクションボタン（削除とキャンセル）のスタイル */
+.action-button {
+    color: #fff; /* テキストのみ白く表示 */
+    font-size: 16px;
+    background: none; /* ボタン下の背景色を排除 */
+    border: none;
+    cursor: pointer;
+    text-decoration: underline;
+    white-space: nowrap; 
+}
+
+
+.action-button:hover {
+    text-decoration: none;
+}
+</style>
+</head>
+<body>
+
+    <div class="home-screen">
+        <!-- ウィジェット部分 -->
+        <div class="widget-container">
+            <div class="widget">
+                <!-- 日付 -->
+                <div id="current-date" class="date">Loading...</div>
+                <!-- 曜日 -->
+                <div id="current-day-of-week" class="day-of-week">Loading...</div>
+                <!-- 六曜 -->
+                <div id="current-rokuyou" class="rokuyou">Loading...</div>
+                <!-- 時間 -->
+                <div id="current-time" class="time">Loading...</div>
+            </div>
+            <div class="widget">
+                <div class="calendar" id="calendar"></div>
+            </div>
+        </div>
+
+
+
+
+        <!-- アプリアイコン部分 -->
+        <div class="app-grid">
+            <a href="https://yu030755.github.io/Website/%E6%81%8B%E6%84%9B%E3%82%A2%E3%83%89%E3%83%90%E3%82%A4%E3%82%B9.html" class="app-icon">
+                <img src="恋.jpg" alt="恋御籤">
+                <div class="app-name">自作恋御籤</div>
+            </a>
+            <a href="https://koi-mikuji.omikuji-do.com/.com" class="app-icon">
+                <img src="恋2.png" alt="恋みくじ">
+                <div class="app-name">恋みくじ</div>
+            </a>
+            <a href="https://yu030755.github.io/Website/%E5%AD%97%E6%95%B0%E3%82%AB%E3%82%A6%E3%83%B3%E3%83%88%E3%82%A2%E3%83%97%E3%83%AA" class="app-icon">
+                <img src="字数.png" alt="字数カウント">
+                <div class="app-name">文字数計測</div>
+            </a>
+<a href="https://yu030755.github.io/Website/%E7%B5%A6%E6%96%99%E8%A8%88%E7%AE%97%E5%99%A8" class="app-icon">
+    <img src="計算機.png" alt="給料計算器">
+    <div class="app-name">給料計算器</div>
+    <div class="lock-icon">🔒</div>
+</a>
+
+    <div class="app-container" id="appContainer">
+        <div class="app-icon" onclick="openPasscodeModal()">
+              <img src="予定表.png" alt="予定表">
+            <div class="lock-icon">🔒</div>
+            <div class="app-name">予定表</div>
+        </div>
+    </div>
+
+    <!-- パスコード入力画面 -->
+    <div class="passcode-modal" id="passcodeModal">
+        <h2 class="modal-title">3桁のパスコードを入力</h2>正しいパスコードを入力しないと予定が表示されません
+        <div class="code-dots" id="codeDots">
+            <div class="code-dot"></div>
+            <div class="code-dot"></div>
+            <div class="code-dot"></div>
+        </div>
+        <div class="keypad">
+            <div class="key" onclick="enterDigit(1)">1</div>
+            <div class="key" onclick="enterDigit(2)">2</div>
+            <div class="key" onclick="enterDigit(3)">3</div>
+            <div class="key" onclick="enterDigit(4)">4</div>
+            <div class="key" onclick="enterDigit(5)">5</div>
+            <div class="key" onclick="enterDigit(6)">6</div>
+            <div class="key" onclick="enterDigit(7)">7</div>
+            <div class="key" onclick="enterDigit(8)">8</div>
+            <div class="key" onclick="enterDigit(9)">9</div>
+            <button class="action-button" onclick="deleteDigit()">削除</button>
+            <div class="key" onclick="enterDigit(0)">0</div>
+            <button class="action-button" onclick="cancelInput()">キャンセル</button>
+        </div>
+    </div>
+
+    <a href="https://omiya-ds.obic7.obicnet.ne.jp/ZADFavo/Favorite.aspx?p=teIAMJWwN1yLQsG1Gfrqwbdjv829%2B%2FhhAFSZ8S5pvy%2BX5UP%2B1ig84d4dLWF6VPWq" class="app-icon">
+        <img src="reserve.png" alt="教習予約">
+        <div class="app-name">教習予約</div>
+    </a>
+    <a href="https://www.omiya-ds.co.jp/student/schedule.php" class="app-icon">
+        <img src="時間割.png" alt="時間割">
+        <div class="app-name">時間割表</div>
+    </a>
+    <a href="https://www.clubdam.com/app/damtomo/karaokeAtDam/" class="app-icon">
+        <img src="カラオケ.png" alt="カラオケ">
+        <div class="app-name">カラオケ</div>
+    </a>
+</div>
+
+<div class="dock">
+</div>
+
+
+
+
+            <!-- 他のアイコンも追加 -->
+        </div>
+    </div>
+
+    <script>
+        // 六曜を取得する関数（例として大安、仏滅などを手動で設定）
+        function getRokuyou(date) {
+            const rokuyou = [
+                '大安', '赤口', '先勝', '友引', '先負', '仏滅', '大安',
+                '赤口', '先勝', '友引', '先負', '仏滅', '大安'
+            ];  // 1週間分の六曜を設定（例として、1週間繰り返し）
+
+            return rokuyou[date.getDay()];
+        }
+
+        // 現在の日付と時間を更新
+function updateTime() {
+    const now = new Date();
+    const year = now.getFullYear();
+    const month = now.getMonth() + 1; // 月は0始まり
+    const day = now.getDate();
+    const dayOfWeek = now.getDay(); // 曜日（0:日曜日, ..., 6:土曜日）
+    const dayOfWeekStr = ['日曜日', '月曜日', '火曜日', '水曜日', '木曜日', '金曜日', '土曜日'][dayOfWeek];
+    const rokuyou = getRokuyou(now); // 六曜を取得
+
+    // 和暦を計算
+    const era = `令和${year - 2018}年`;
+
+    // 日付を改行形式で設定
+    const dateHTML = `${year}年<br>（${era}）<br>${month}月${day}日`;
+
+    // HTML要素を更新
+    const dayOfWeekElement = document.getElementById('current-day-of-week');
+    document.getElementById('current-date').innerHTML = dateHTML;
+    dayOfWeekElement.textContent = dayOfWeekStr;
+    document.getElementById('current-rokuyou').textContent = rokuyou;
+    document.getElementById('current-time').textContent = now.toLocaleTimeString('ja-JP', { hour12: false });
+
+    // 曜日に対応するクラスを追加
+    dayOfWeekElement.className = ''; // 既存のクラスをリセット
+    if (dayOfWeek === 0) {
+        dayOfWeekElement.classList.add('sunday'); // 日曜日
+    } else if (dayOfWeek === 6) {
+        dayOfWeekElement.classList.add('saturday'); // 土曜日
+    }
+}
+
+
+        // カレンダーを表示
+        function renderCalendar() {
+            const now = new Date();
+            const month = now.getMonth();
+            const year = now.getFullYear();
+
+            const firstDayOfMonth = new Date(year, month, 1);
+            const lastDayOfMonth = new Date(year, month + 1, 0);
+            const startDay = firstDayOfMonth.getDay(); // 月初の曜日
+            const numDays = lastDayOfMonth.getDate(); // 月の日数
+            const today = now.getDate(); // 今日の日付
+
+            let calendarHTML = '';
+            
+            // 曜日のヘッダーを追加
+            const weekDays = ['日', '月', '火', '水', '木', '金', '土'];
+            calendarHTML += '<div class="calendar-header">';
+            weekDays.forEach((day, index) => {
+                const dayClass = (index === 0) ? 'sunday' : (index === 6) ? 'saturday' : '';
+                calendarHTML += `<div class="${dayClass}">${day}</div>`;
+            });
+            calendarHTML += '</div>';
+
+            // 日付を表示
+            let days = Array(startDay).fill('').concat(Array.from({ length: numDays }, (_, i) => i + 1));
+
+            days.forEach((day, index) => {
+                if (day) {
+                    const dayOfWeek = (startDay + index) % 7;
+                    let dayClass = '';
+                    
+                    // 曜日によって数字の色を変更
+                    if (dayOfWeek === 6) {
+                        dayClass = 'sunday'; // 日曜日は赤
+                    } else if (dayOfWeek === 5) {
+                        dayClass = 'saturday'; // 土曜日は青
+                    }
+
+                    const todayClass = (day === today) ? 'today' : '';
+                    calendarHTML += `<div class="${dayClass} ${todayClass}"><span>${day}</span></div>`;
+                } else {
+                    calendarHTML += `<div></div>`; // 空白の日
+                }
+            });
+
+            document.getElementById('calendar').innerHTML = calendarHTML;
+        }
+
+        // 初期化
+        updateTime();
+        renderCalendar();
+
+        // 時間を毎秒更新
+        setInterval(updateTime, 1000);
+
+function setWallpaper() {
+    const isPortrait = window.matchMedia("(orientation: portrait)").matches;
+    const wallpaper = isPortrait ? 'tate.jpg' : 'yoko.jpg';
+    document.body.style.backgroundImage = `url(${wallpaper})`;
+}
+
+// 初期ロード時に壁紙を設定
+setWallpaper();
+
+// 画面の向きが変更されたときに壁紙を切り替え
+window.addEventListener("resize", () => {
+    setWallpaper();
+});
+
+       // パスコード変数
+       let passcode = ""; // 入力されたパスコード
+
+		function openPasscodeModal() {
+    document.getElementById("passcodeModal").style.display = "block";
+    document.getElementById("appContainer").style.display = "none";
+}
+
+
+        // 数字を入力
+        function enterDigit(digit) {
+            if (passcode.length < 3) {
+                passcode += digit;
+                updateDots();
+                if (passcode.length === 3) {
+                    redirectToURL();
+                }
+            }
+        }
+
+        // ドットを更新
+        function updateDots() {
+            const dots = document.querySelectorAll(".code-dot");
+            dots.forEach((dot, index) => {
+                dot.style.backgroundColor = index < passcode.length ? "#fff" : "#333";
+            });
+        }
+
+        // 一文字削除
+        function deleteDigit() {
+            passcode = passcode.slice(0, -1); // 最後の文字を削除
+            updateDots();
+        }
+
+        // キャンセルして前の画面に戻る
+function cancelInput() {
+    document.getElementById("passcodeModal").style.display = "none"; // パスコード画面を非表示
+    document.getElementById("appContainer").style.display = "flex"; // ホーム画面を再表示
+}
+
+        // 3桁入力後のリダイレクト処理
+        function redirectToURL() {
+            const baseURL = "https://calendar.google.com/calendar/embed?src=";
+            const targetURL = `${baseURL}${passcode}fut9b5aua79uc0n2bdrtp2lrltvuk%40import.calendar.google.com&ctz=Asia%2FTokyo`;
+            window.location.href = targetURL;
+        }
+
+    </script>
+
+</body>
+</html>
