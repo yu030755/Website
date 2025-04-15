@@ -1,0 +1,288 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>恋愛アドバイスくじ</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            text-align: center;
+            margin-top: 50px;
+            background-color: #ffefef;
+        }
+        .omikuji-box {
+            display: inline-block;
+            padding: 20px;
+            border: 2px solid #ff1493;
+            border-radius: 10px;
+            background-color: #fff0f5;
+        }
+        .omikuji-result {
+            margin-top: 20px;
+            font-size: 1.2em;
+            color: #d00;
+        }
+        .history {
+            margin-top: 30px;
+            text-align: left;
+        }
+        button {
+            padding: 10px 20px;
+            font-size: 1em;
+            background-color: #ff69b4;
+            color: white;
+            border: none;
+            border-radius: 5px;
+            cursor: pointer;
+            margin: 5px;
+        }
+        button.disabled {
+            background-color: #d3a8c2; /* 薄暗いピンク */
+            cursor: not-allowed;
+        }
+        .retry-box {
+            position: fixed;
+            bottom: 10px;
+            right: 10px;
+        }
+        .switch {
+            position: relative;
+            display: inline-block;
+            width: 60px;
+            height: 34px;
+        }
+        .switch input {
+            opacity: 0;
+            width: 0;
+            height: 0;
+        }
+        .slider {
+            position: absolute;
+            cursor: pointer;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background-color: #ccc;
+            transition: .4s;
+        }
+        .slider:before {
+            position: absolute;
+            content: "";
+            height: 26px;
+            width: 26px;
+            left: 4px;
+            bottom: 4px;
+            background-color: white;
+            transition: .4s;
+        }
+        input:checked + .slider {
+            background-color: #ff69b4;
+        }
+        input:checked + .slider:before {
+            transform: translateX(26px);
+        }
+        .slider.round {
+            border-radius: 34px;
+        }
+        .slider.round:before {
+            border-radius: 50%;
+        }
+    </style>
+</head>
+<body>
+    <h1>恋愛アドバイスくじ</h1>
+    <div class="omikuji-box">
+        <label class="switch">
+            <input type="checkbox" id="ai-switch">
+            <span class="slider round"></span>
+        </label>
+        <span>AIの回答を有効にする</span>
+        <button id="draw-button" onclick="drawOmikuji()">恋愛アドバイスをもらう</button>
+        <button id="clear-history-button" onclick="clearHistory()">履歴削除</button>
+        <div id="result" class="omikuji-result"></div>
+	<div id="lucky-item" class="lucky-item"></div>
+        <div id="retry-message">1日１回引けるよ！！</div>
+    </div>
+    <div class="history" id="history"></div>
+    <div class="retry-box">
+        <input type="text" id="retry-input" placeholder="おみくじ文作成者:茂呂、嶺山">
+        <button onclick="checkRetry()">恋愛が上手く行きますように😌🙏🏻💭</button>
+    </div>
+
+    <script>
+        const basicResults = [
+            "大大吉: 人生なんて楽しんだ者勝ちだわ！",
+            "大吉: どう告るかは、あなた次第！",
+            "中吉: 緊張するのは、相手に気持ちがあるからです",
+            "小吉: 当たってくだけろ",
+            "末吉: 相手に執着しすぎない",
+            "凶: 「もう」なんて言うな！1秒を大切に！",
+            "大吉: なにも行動していないのに叶うと思うな！",
+            "中吉: 一旦、好きバレしろや！",
+            "小吉: 今を楽しんでください",
+            "末吉: 失敗をたくさんして成長しよう！",
+            "大吉: 進展したかったらしたほうがいい",
+            "凶: もう好きバレしろよ。どうしてしないん？？まじ全然行動してなくね？？",
+            "大吉: あとで後悔するよりもいうべき！",
+            "中吉: 恋愛は素直が一番",
+            "小吉: 立ち向かってくだけよ！！",
+            "末吉: 今のうちにたくさん失敗してください！！それで成長できます！",
+            "大吉: 有言実行",
+            "中吉: 切り替え大切",
+            "小吉: ダメでもあきらめんな",
+            "末吉: 自分の伝えたい思いを伝えな。自分の気持ちをしっかり伝えれば向こうもしっかり考えて返事くれると思うよ。",
+            "中吉: 恋愛は素直が一番"
+        ];
+
+        const aiResults = [
+            "大吉: あなたの魅力が輝いています！自信を持って行動しましょう。",
+            "大吉: 今日は最高の日です。心を開いて新しい出会いを楽しんで。",
+            "大吉: 大切な人にあなたの気持ちを正直に伝えてみてください。",
+            "大吉: 積極的にアプローチしてみましょう。きっと良い結果が待っています。",
+            "中吉: 焦らず、ゆっくりと関係を築いていきましょう。",
+            "中吉: 相手を理解しようとする姿勢が大切です。",
+            "小吉: 自然体で接することで、相手も心を開くでしょう。",
+            "小吉: 一歩ずつ前進することが成功の鍵です。",
+            "末吉: 小さな優しさが大きな喜びをもたらします。",
+            "末吉: 自分のペースで、無理せず進んでください。",
+            "凶: 今日は無理せず、リラックスして過ごしましょう。",
+            "凶: 思い通りにならなくても、焦らず次のチャンスを待って。",
+            "大吉: 自信を持って新しいことに挑戦しよう！",
+            "中吉: 積極的なアプローチが良い結果を生むでしょう。",
+            "小吉: 少しずつ距離を縮めてみて。",
+            "末吉: 相手を理解しようとする姿勢が大切です。",
+            "凶: 今日はリラックスして自分の時間を大切に。",
+            // ここに他のアドバイスを追加（省略のため一部のみ記載）
+        ];
+
+	// ラッキーアイテムリスト
+	const luckyItems = [
+   		 "ピンク色の花",
+   		 "ネックレス",
+  		  "指輪",
+ 		   "パワーストーン",
+    		"ちいかわ",
+ 		   "はちわれ",
+  		  "ピンク系の色のシャープペンシル",
+ 		   "マフラー",
+		    "手袋",
+ 		   "ラブソング"
+	
+	];
+
+
+
+
+
+      function drawOmikuji() {
+    const aiSwitch = document.getElementById("ai-switch").checked;
+    const results = aiSwitch ? [...basicResults, ...aiResults] : basicResults;
+
+    // 日付と時間を取得
+    const now = new Date();
+    const today = now.toLocaleDateString();
+    const time = now.toLocaleTimeString();
+
+    // ランダムで結果を選ぶ
+    const randomIndex = Math.floor(Math.random() * results.length);
+    const result = results[randomIndex];
+
+    // ランダムでラッキーアイテムを選ぶ
+    const randomItem = luckyItems[Math.floor(Math.random() * luckyItems.length)];
+
+    // 結果とラッキーアイテムを画面に表示
+    document.getElementById("result").innerText = result;
+    document.getElementById("lucky-item").textContent = `今日のラッキーアイテム: ${randomItem}`;
+
+    // 履歴を表示
+    const history = document.getElementById("history");
+    const entry = document.createElement("div");
+    entry.innerText = `${today} ${time} - ${result}`;
+    history.appendChild(entry);
+
+    // ローカルストレージに保存
+    localStorage.setItem("lastDrawDate", today);
+    localStorage.setItem("lastResult", result);
+    localStorage.setItem("lastTime", time);
+
+    // ボタンを無効化し、再試行メッセージを表示
+    const drawButton = document.getElementById("draw-button");
+    drawButton.disabled = true;
+    drawButton.classList.add("disabled");
+    document.getElementById("retry-message").innerText = "また明日挑戦してね！";
+}
+
+
+        // 1日1回に制限するためのローカルストレージ使用
+                window.onload = function () {
+            const lastDrawDate = localStorage.getItem('lastDrawDate');
+            const today = new Date().toLocaleDateString();
+
+            if (lastDrawDate === today) {
+                const drawButton = document.getElementById("draw-button");
+                drawButton.disabled = true;
+                drawButton.classList.add("disabled");
+                document.getElementById("retry-message").innerText = "また明日挑戦してね！";
+                
+                const result = localStorage.getItem('lastResult');
+                const time = localStorage.getItem('lastTime');
+                const history = document.getElementById("history");
+                const entry = document.createElement("div");
+                entry.innerText = `${today} ${time} - ${result}`;
+                history.appendChild(entry);
+		// ラッキーアイテムも表示する const randomItem = luckyItems[Math.floor(Math.random() * luckyItems.length)]; document.getElementById("lucky-item").textContent = `今日のラッキーアイテム: ${randomItem}`
+            }
+        };
+
+        function checkRetry() {
+    const input = document.getElementById("retry-input").value.toLowerCase();
+    const drawButton = document.getElementById("draw-button");
+
+    if (input === "retry") {
+        // ローカルストレージをリセット
+        localStorage.removeItem("lastDrawDate");
+        localStorage.removeItem("lastResult");
+        localStorage.removeItem("lastTime");
+
+        // ボタンを再び有効化
+        drawButton.disabled = false;
+        drawButton.classList.remove("disabled");
+        document.getElementById("retry-message").innerText = "1日１回引けるよ！！";
+
+        alert("もう一度引けるようになりました！");
+    } else if (input === "big") {
+        const now = new Date();
+        const today = now.toLocaleDateString();
+        const time = now.toLocaleTimeString();
+
+        // 特別な結果（大大吉）を強制表示
+        const result = aiResults[0];
+
+        // ラッキーアイテムも再生成
+        const randomItem = luckyItems[Math.floor(Math.random() * luckyItems.length)];
+        document.getElementById("result").innerText = result;
+        document.getElementById("lucky-item").textContent = `今日のラッキーアイテム: ${randomItem}`;
+
+        // 履歴に追加
+        const history = document.getElementById("history");
+        const entry = document.createElement("div");
+        entry.innerText = `${today} ${time} - ${result}`;
+        history.appendChild(entry);
+    }
+
+    // 入力フィールドをクリア
+    document.getElementById("retry-input").value = "";
+}
+
+
+        function clearHistory() {
+            const history = document.getElementById("history");
+            while (history.firstChild) {
+                history.removeChild(history.firstChild);
+            }
+        }
+    </script>
+</body>
+</html>
