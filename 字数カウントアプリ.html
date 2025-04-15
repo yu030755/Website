@@ -1,0 +1,108 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>字数カウントアプリ</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            margin: 20px;
+        }
+        .container {
+            max-width: 500px;
+            margin: 0 auto;
+        }
+        input[type="number"], select {
+            width: 100%;
+            padding: 10px;
+            margin-bottom: 20px;
+            box-sizing: border-box;
+        }
+        textarea {
+            width: 100%;
+            padding: 10px;
+            height: 100px;
+            box-sizing: border-box;
+        }
+        .count {
+            font-weight: bold;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1><center>字数カウントアプリ</center></h1>
+        
+        <label for="language">言語（計測方式）:</label>
+        <select id="language">
+            <option value="" selected>選択してください</option>
+            <option value="ja">日本語（文字数カウント）</option>
+            <option value="en">英語（単語数カウント）</option>
+        </select>
+
+        <label for="targetLength" id="targetLabel">指定文字数/単語数:</label>
+        <input type="number" id="targetLength" placeholder="指定字数を入力してください">
+
+        <label for="textInput">テキスト入力:</label>
+        <textarea id="textInput" placeholder="⚠先に言語（計測方式）を選択してください⚠"></textarea>
+
+        <p class="count">合計字数は <span id="currentCount">0</span> <span id="unitCount"></span>です</p>
+        <p class="count">指定字数まであと <span id="remainingCount">0</span> <span id="unitRemaining"></span>です</p>
+    </div>
+
+    <script>
+        const targetLengthInput = document.getElementById('targetLength');
+        const languageSelect = document.getElementById('language');
+        const textInput = document.getElementById('textInput');
+        const targetLabel = document.getElementById('targetLabel');
+        const currentCount = document.getElementById('currentCount');
+        const remainingCount = document.getElementById('remainingCount');
+        const unitCount = document.getElementById('unitCount');
+        const unitRemaining = document.getElementById('unitRemaining');
+
+        function updateLabels() {
+            if (languageSelect.value === "ja") {
+                targetLabel.textContent = "指定文字数:";
+                textInput.placeholder = "指定文字数を入力してください";
+                unitCount.textContent = "文字";
+                unitRemaining.textContent = "文字";
+            } else if (languageSelect.value === "en") {
+                targetLabel.textContent = "指定単語数:";
+                textInput.placeholder = "指定単語数を入力してください";
+                unitCount.textContent = "単語";
+                unitRemaining.textContent = "単語";
+            }
+        }
+
+        function updateCount() {
+            if (languageSelect.value === "") return;
+
+            const targetLength = parseInt(targetLengthInput.value) || 0;
+            const text = textInput.value;
+            let count;
+
+            if (languageSelect.value === "ja") {
+                count = text.length; // 文字数
+            } else if (languageSelect.value === "en") {
+                count = text.trim().split(/\s+/).filter(word => word).length; // 単語数
+            }
+
+            const remaining = targetLength - count;
+            currentCount.textContent = count;
+            if (remaining >= 0) {
+                remainingCount.textContent = `${remaining}`;
+            } else {
+                remainingCount.textContent = `+${Math.abs(remaining)}`;
+            }
+        }
+
+        targetLengthInput.addEventListener('input', updateCount);
+        languageSelect.addEventListener('change', () => {
+            updateLabels();
+            updateCount();
+        });
+        textInput.addEventListener('input', updateCount);
+    </script>
+</body>
+</html>
