@@ -37,7 +37,7 @@
     display: grid;
     grid-template-columns: 1fr 1.7fr;
     grid-gap: 0px; /* ウィジェット間の隙間を調整 */
-    margin-bottom: 15px;
+    margin-bottom: 20px;
     height: auto; /* 高さを自動調整 */
 }
 
@@ -152,11 +152,11 @@
         .app-grid {
             display: grid;
             grid-template-columns: repeat(4, 1fr);
-    grid-template-rows: repeat(auto-fill, 100px);
+    grid-template-rows: repeat(4, 100px);
             grid-gap: 10px; /* アプリとアプリとの間調整 */
             justify-items: center;
             flex-grow: 1;
-	    max-height: 350px;/* アプリスクロール防止 */
+	    max-height: 450px;/* アプリスクロール防止 */
             overflow-y: auto;
      	    margin-bottom: 35px; /* 下方向の余白を調整 */
         }
@@ -487,7 +487,21 @@
         <img src="カラオケ.png" alt="カラオケ">
         <div class="app-name">カラオケ</div>
     </a>
+  <a href="https://bunkyo-service.jp/gakushoku#g_syounan" class="app-icon">
+                <img src="lunchmenu.png" alt="食堂メニュー">
+                <div class="app-name">食堂メニュー</div>
+            </a>
+  <a href="https://cambridge-university-press.jp/material/present_yourself/" class="app-icon">
+                <img src="english.jpeg" alt="英語教科書">
+                <div class="app-name">英語動画</div>
+            </a>
+  <a href="https://cambridge-university-press.jp/material/present_yourself/" class="app-icon">
+                <img src="english.jpg" alt="英語教科書">
+                <div class="app-name">英語動画</div>
+            </a>
 </div>
+
+
 
 <div class="dock">
     <a href="https://bunkyo-u.manaba.jp/ct/home" class="app-icon">
@@ -502,6 +516,9 @@
     <a href="https://open.shonan.bunkyo.ac.jp/" class="app-icon">
         <img src="Bu.jpg" alt="大学HP">
     </a>
+
+
+
     <!-- 追加したいアイコンのリンクと画像 -->
 </div>
 
@@ -517,10 +534,7 @@
         // 六曜を取得する関数（例として大安、仏滅などを手動で設定）
         function getRokuyou(date) {
             const rokuyou = [
-                '大安',
-                '赤口', '先勝', '友引', '先負', '仏滅','大安',
-                '赤口', '先勝', '友引', '先負', '仏滅','大安',
-                '赤口', '先勝', '友引', '先負', '仏滅',
+                 '先負', '仏滅','大安','赤口', '先勝', '友引', 
             ];  // 1週間分の六曜を設定（例として、1週間繰り返し）
 
             return rokuyou[date.getDay()];
