@@ -490,10 +490,7 @@
   <a href="https://bunkyo-service.jp/gakushoku#g_syounan" class="app-icon">
                 <img src="lunchmenu.png" alt="食堂メニュー">
                 <div class="app-name">食堂メニュー</div>
-            </a>
-  <a href="https://cambridge-university-press.jp/material/present_yourself/" class="app-icon">
-                <img src="english.jpeg" alt="英語教科書">
-                <div class="app-name">英語動画</div>
+
             </a>
   <a href="https://cambridge-university-press.jp/material/present_yourself/" class="app-icon">
                 <img src="english.jpg" alt="英語教科書">
@@ -534,7 +531,7 @@
         // 六曜を取得する関数（例として大安、仏滅などを手動で設定）
         function getRokuyou(date) {
             const rokuyou = [
-                 '先負', '仏滅','大安','赤口', '先勝', '友引', 
+             '仏滅','大安','赤口', '先勝', '友引','先負' 
             ];  // 1週間分の六曜を設定（例として、1週間繰り返し）
 
             return rokuyou[date.getDay()];
@@ -605,9 +602,9 @@ function updateTime() {
                     let dayClass = '';
                     
                     // 曜日によって数字の色を変更
-                    if (dayOfWeek === 2) {
+                    if (dayOfWeek === 4) {
                         dayClass = 'sunday'; // 日曜日は赤
-                    } else if (dayOfWeek === 1) {
+                    } else if (dayOfWeek === 3) {
                         dayClass = 'saturday'; // 土曜日は青
                     }
 
