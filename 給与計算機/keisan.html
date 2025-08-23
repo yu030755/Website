@@ -3,8 +3,8 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <link rel="manifest" href="manifest.json">
     <title>給与計算機</title>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
     <style>
         :root {
             --primary-color: #007bff;
@@ -20,7 +20,7 @@
             background-color: var(--background-color);
             color: var(--text-color);
             margin: 0;
-            padding: 20px;
+            padding: 10px;
             font-size: 14px;
         }
         .container {
@@ -34,7 +34,9 @@
             color: var(--primary-color);
             border-bottom: 2px solid var(--primary-color);
             padding-bottom: 5px;
+            margin-top: 0;
         }
+        .card-header { display: flex; justify-content: space-between; align-items: center; }
         .card {
             background-color: var(--card-bg);
             border: 1px solid var(--border-color);
@@ -43,16 +45,17 @@
             box-shadow: 0 2px 4px rgba(0,0,0,0.05);
         }
         .form-group { margin-bottom: 15px; }
-        label { display: block; margin-bottom: 5px; font-weight: bold; }
-        input[type="number"], input[type="month"], select {
+        label, summary { display: block; margin-bottom: 5px; font-weight: bold; }
+        .radio-group label { font-weight: normal; display: flex; align-items: center; gap: 8px; margin-bottom: 8px; cursor: pointer; }
+        input[type="number"], input[type="month"], input[type="text"], select {
             width: 100%;
             padding: 8px;
             border: 1px solid var(--border-color);
             border-radius: 4px;
             box-sizing: border-box;
         }
-        .input-group { display: flex; gap: 10px; }
-        .input-group > div { flex: 1; }
+        .input-group { display: flex; gap: 10px; flex-wrap: wrap; }
+        .input-group > div { flex: 1; min-width: 120px; }
         button {
             background-color: var(--primary-color);
             color: white;
@@ -61,21 +64,50 @@
             border-radius: 4px;
             cursor: pointer;
             font-size: 16px;
+            width: 100%;
         }
         button:hover { opacity: 0.9; }
+        .table-wrapper { display: block; width: 100%; overflow-x: auto; }
         table { width: 100%; border-collapse: collapse; margin-top: 20px; }
-        th, td { border: 1px solid var(--border-color); padding: 8px; text-align: right; }
+        th, td { border: 1px solid var(--border-color); padding: 8px; text-align: right; white-space: nowrap; }
         th { background-color: #e9ecef; text-align: center; }
         td:first-child { font-weight: bold; text-align: center; }
         .deduction-col { background-color: var(--deduction-bg); }
         .totals-section, .walls-section { margin-top: 20px; padding-top: 15px; border-top: 1px solid var(--border-color); }
-        .totals-section p, .walls-section p { margin: 5px 0; }
-        .totals-section strong { display: inline-block; width: 150px; }
+        .totals-section p, .walls-section p { margin: 8px 0; display: flex; justify-content: space-between; flex-wrap: wrap; border-bottom: 1px solid #f0f0f0; padding-bottom: 8px; }
+        .totals-section strong, .walls-section strong { font-weight: bold; }
         .warning-red { color: var(--warning-color); font-weight: bold; }
-        .hidden { display: none; }
+        details > summary { cursor: pointer; color: var(--primary-color); }
+        details[open] { background-color: #f8f9fa; padding: 10px; border-radius: 4px; margin-bottom: 15px;}
+        .graph-controls { display: flex; flex-wrap: wrap; gap: 10px 20px; align-items: center; margin-top: 15px; }
+        .graph-controls strong { margin-right: 10px; }
+        .graph-controls label { font-weight: normal; display: flex; align-items: center; gap: 5px; cursor: pointer; margin-bottom: 0; }
+        #initial-choice-overlay { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.7); z-index: 1000; display: none; align-items: center; justify-content: center; }
+        #initial-choice-dialog { background: white; padding: 30px; border-radius: 8px; text-align: center; }
+        .switch { display: flex; align-items: center; gap: 10px; }
+        .switch-label { font-weight: bold; font-size: 1em; color: var(--text-color) }
+        .toggle-switch { position: relative; display: inline-block; width: 50px; height: 24px; }
+        .toggle-switch input { opacity: 0; width: 0; height: 0; }
+        .slider { position: absolute; cursor: pointer; top: 0; left: 0; right: 0; bottom: 0; background-color: #ccc; transition: .4s; border-radius: 24px; }
+        .slider:before { position: absolute; content: ""; height: 16px; width: 16px; left: 4px; bottom: 4px; background-color: white; transition: .4s; border-radius: 50%; }
+        input:checked + .slider { background-color: var(--primary-color); }
+        input:checked + .slider:before { transform: translateX(26px); }
     </style>
 </head>
 <body>
+    <div id="initial-choice-overlay">
+        <div id="initial-choice-dialog">
+            <h2>ようこそ！</h2>
+            <div class="form-group" style="text-align: left; margin-top: 20px;">
+                <label>最初に給与の計算方法を選択してください。</label>
+                <div class="radio-group">
+                    <label><input type="radio" name="initialCalculationMode" value="my_standard" checked> My時給基準</label>
+                    <label><input type="radio" name="initialCalculationMode" value="manual"> 時給計算手動設定</label>
+                </div>
+            </div>
+            <button id="initial-choice-button">決定</button>
+        </div>
+    </div>
 
     <div class="container">
         <header><h1>給与計算機</h1></header>
@@ -84,49 +116,53 @@
             <div class="card">
                 <h2>基本設定</h2>
                 <div class="form-group">
-                    <label for="calculation-mode">計算方法</label>
-                    <select id="calculation-mode">
-                        <option value="marugame">丸亀基準で計算する</option>
-                        <option value="custom">自分で指定して計算する</option>
-                    </select>
-                </div>
-                <div id="custom-settings" class="hidden">
-                    <div class="input-group">
-                        <div><label for="custom-hourly-wage">時給 (円)</label><input type="number" id="custom-hourly-wage" placeholder="1200"></div>
-                        <div><label for="custom-night-premium">深夜割増 (%)</label><input type="number" id="custom-night-premium" placeholder="25"></div>
+                    <label>計算方法</label>
+                    <div class="radio-group" id="mode-selection-group">
+                        <label><input type="radio" name="calculationMode" value="my_standard"> My時給基準</label>
+                        <label><input type="radio" name="calculationMode" value="manual"> 時給計算手動設定</label>
                     </div>
+                </div>
+                <div id="manual-settings" style="display: none;">
+                    <div class="input-group">
+                        <div><label for="manual-hourly-wage">時給(円)</label><input type="number" id="manual-hourly-wage"></div>
+                        <div><label for="manual-night-premium">深夜割増(%)</label><input type="number" id="manual-night-premium"></div>
+                    </div>
+                     <div class="form-group" style="margin-top:15px;"><label for="manual-union-fee">労働組合費(円)</label><input type="number" id="manual-union-fee" placeholder="毎月の組合費を入力"></div>
                 </div>
             </div>
 
             <div class="card">
                 <h2>データ入力</h2>
                 <div class="form-group"><label for="target-month">対象年月</label><input type="month" id="target-month"></div>
-                <div class="form-group"><label for="work-days">出勤日数</label><input type="number" id="work-days" placeholder="例: 15"></div>
+                <div class="form-group"><label for="work-days">出勤日数</label><input type="number" id="work-days"></div>
+                <div class="form-group"><label for="hour-input-mode">勤務時間入力方法</label><select id="hour-input-mode"><option value="decimal">時間単位</option><option value="hm">時間と分</option></select></div>
                 
-                <div class="form-group"><label for="hour-input-mode">勤務時間の入力方法</label><select id="hour-input-mode"><option value="decimal">時間単位</option><option value="hm">時間と分</option></select></div>
+                <div id="total-hours-decimal-input"><label for="total-decimal-hours">総労働時間</label><input type="number" id="total-decimal-hours" placeholder="特別手当の時間も含む合計"></div>
+                <div id="total-hours-hm-input" style="display: none;" class="input-group"><div><label>総労働時間</label><input type="number" id="total-h-hours" placeholder="時間"></div><div><label>&nbsp;</label><input type="number" id="total-m-minutes" placeholder="分"></div></div>
                 
-                <div id="total-hours-decimal-input">
-                    <label for="total-decimal-hours">総労働時間</label><input type="number" id="total-decimal-hours" placeholder="例: 165.5">
-                </div>
-                <div id="total-hours-hm-input" class="input-group hidden">
-                    <div><label for="total-h-hours">総労働時間<br>時間</label><input type="number" id="total-h-hours"></div>
-                    <div><label for="total-m-minutes"><br>分</label><input type="number" id="total-m-minutes"></div>
-                </div>
+                <div id="regular-night-hours-decimal-input" class="form-group"><label for="regular-night-decimal-hours">（通常）深夜労働時間</label><input type="number" id="regular-night-decimal-hours"></div>
+                <div id="regular-night-hours-hm-input" style="display: none;" class="input-group form-group"><div><label>（通常）深夜労働時間</label><input type="number" id="regular-night-h-hours" placeholder="時間"></div><div><label>&nbsp;</label><input type="number" id="regular-night-m-minutes" placeholder="分"></div></div>
 
-                <div id="night-hours-decimal-input" class="form-group">
-                    <label for="night-decimal-hours">深夜労働時間</label><input type="number" id="night-decimal-hours" placeholder="例: 20.25">
-                </div>
-                <div id="night-hours-hm-input" class="input-group hidden form-group">
-                    <div><label for="night-h-hours">深夜労働時間<br>時間</label><input type="number" id="night-h-hours"></div>
-                    <div><label for="night-m-minutes"><br>分</label><input type="number" id="night-m-minutes"></div>
-                </div>
+                <details id="special-pay-details" class="form-group">
+                    <summary>▼ 特別手当（時給アップ）を追加</summary>
+                    <div class="form-group"><label for="special-hourly-wage">特別時給額 (円)</label><input type="number" id="special-hourly-wage" placeholder="例: 1500"></div>
+                    <div id="special-hours-decimal-input"><label for="special-decimal-hours">対象労働時間</label><input type="number" id="special-decimal-hours"></div>
+                    <div id="special-hours-hm-input" style="display: none;" class="input-group"><div><label>対象労働時間</label><input type="number" id="special-h-hours" placeholder="時間"></div><div><label>&nbsp;</label><input type="number" id="special-m-minutes" placeholder="分"></div></div>
+                    <div id="special-night-hours-decimal-input"><label for="special-night-decimal-hours">うち、深夜労働時間</label><input type="number" id="special-night-decimal-hours"></div>
+                    <div id="special-night-hours-hm-input" style="display: none;" class="input-group"><div><label>うち、深夜労働時間</label><input type="number" id="special-night-h-hours" placeholder="時間"></div><div><label>&nbsp;</label><input type="number" id="special-night-m-minutes" placeholder="分"></div></div>
+                </details>
+
+                 <details id="other-pay-details" class="form-group">
+                    <summary>▼ その他給与を追加 (ボーナス/有休など)</summary>
+                    <div class="form-group"><label for="other-pay-amount">金額 (円)</label><input type="number" id="other-pay-amount"></div>
+                    <div class="form-group"><label for="other-pay-note">内容</label><input type="text" id="other-pay-note" placeholder="例: 夏季ボーナス"></div>
+                </details>
 
                 <div id="makanai-section">
-                    <div class="form-group"><label for="makanai-input-mode">賄いの入力方法</label><select id="makanai-input-mode"><option value="count">回数で入力</option><option value="amount">金額で入力</option></select></div>
-                    <div class="form-group" id="makanai-count-group"><label for="makanai-count">賄いを食べた回数</label><input type="number" id="makanai-count"></div>
-                    <div class="form-group hidden" id="makanai-amount-group"><label for="makanai-amount">賄い金額</label><input type="number" id="makanai-amount"></div>
+                    <div class="form-group"><label for="makanai-input-mode">賄い入力方法</label><select id="makanai-input-mode"><option value="count">回数</option><option value="amount">金額</option></select></div>
+                    <div class="form-group" id="makanai-count-group"><label for="makanai-count">賄い回数</label><input type="number" id="makanai-count"></div>
+                    <div class="form-group" style="display: none;" id="makanai-amount-group"><label for="makanai-amount">賄い金額</label><input type="number" id="makanai-amount"></div>
                 </div>
-
                 <button id="add-update-button">登録・更新</button>
             </div>
 
@@ -134,22 +170,48 @@
                 <h2>集計表</h2>
                 <div class="input-group">
                     <div><label for="view-year">年度選択</label><select id="view-year"></select></div>
-                    <div><label for="view-month">月選択</label><select id="view-month"><option value="all">年間表示</option><option value="1">1月</option><option value="2">2月</option><option value="3">3月</option><option value="4">4月</option><option value="5">5月</option><option value="6">6月</option><option value="7">7月</option><option value="8">8月</option><option value="9">9月</option><option value="10">10月</option><option value="11">11月</option><option value="12">12月</option></select></div>
+                    <div><label for="view-month">月選択</label><select id="view-month"><option value="all">年間</option><option value="1">1月</option><option value="2">2月</option><option value="3">3月</option><option value="4">4月</option><option value="5">5月</option><option value="6">6月</option><option value="7">7月</option><option value="8">8月</option><option value="9">9月</option><option value="10">10月</option><option value="11">11月</option><option value="12">12月</option></select></div>
                 </div>
-                <table>
-                    <thead><tr><th>月</th><th>出勤日数</th><th>総労働時間</th><th>総支給額</th><th class="deduction-col">賄い/回数</th><th class="deduction-col">労働組合費</th><th>差引支給額</th></tr></thead>
-                    <tbody id="summary-table-body"></tbody>
-                </table>
+                <div class="table-wrapper">
+                    <table>
+                        <thead><tr><th>月</th><th>出勤日数</th><th>総労働時間</th><th>総支給額</th><th class="deduction-col">賄い/回数</th><th class="deduction-col">労働組合費</th><th>差引支給額</th></tr></thead>
+                        <tbody id="summary-table-body"></tbody>
+                    </table>
+                </div>
                 <div class="totals-section">
-                    <h3>合計</h3>
-                    <p><strong>合計出勤日数:</strong> <span id="total-days">0</span> 日</p>
+                    <p><strong>合計出勤日数:</strong> <span id="total-days">0日</span></p>
                     <p><strong>合計勤務時間:</strong> <span id="total-hours">0時間0分</span></p>
-                    <p><strong>総支給額合計:</strong> <span id="total-gross">0</span> 円</p>
-                    <p><strong>賄い合計:</strong> <span id="total-makanai">0</span> 円</p>
-                    <p><strong>労働組合費合計:</strong> <span id="total-union">0</span> 円</p>
-                    <p><strong>差引支給額合計:</strong> <span id="total-net">0</span> 円</p>
+                    <p><strong>総支給額合計:</strong> <span id="total-gross">0円</span></p>
+                    <p><strong>賄い合計:</strong> <span id="total-makanai">0円</span></p>
+                    <p><strong>労働組合費合計:</strong> <span id="total-union">0円</span></p>
+                    <p><strong>差引支給額合計:</strong> <span id="total-net">0円</span></p>
                     <hr>
-                    <p><strong>今年の予想収入目安(差引支給額):</strong> <span id="projected-net">0</span> 円</p>
+                    <p><strong>今年の予想収入(差引支給額):</strong> <span id="projected-net">0円</span></p>
+                </div>
+            </div>
+
+            <div class="card">
+                <div class="card-header">
+                    <h2>グラフ表示</h2>
+                    <div class="switch">
+                        <label class="toggle-switch">
+                            <input type="checkbox" id="graph-on-off-switch">
+                            <span class="slider"></span>
+                        </label>
+                    </div>
+                </div>
+                <div id="graph-area">
+                    <div class="graph-controls">
+                        <div class="graph-control-row">
+                            <strong>表示項目:</strong>
+                            <label><input type="checkbox" data-target="gross"> 総支給額</label>
+                            <label><input type="checkbox" data-target="net"> 差引支給額</label>
+                            <label><input type="checkbox" data-target="days"> 総労働日数</label>
+                        </div>
+                    </div>
+                    <div style="position: relative; height:40vh">
+                        <canvas id="salary-chart"></canvas>
+                    </div>
                 </div>
             </div>
 
@@ -162,307 +224,360 @@
 
 <script>
 document.addEventListener('DOMContentLoaded', () => {
-    if ('serviceWorker' in navigator) {
-        navigator.serviceWorker.register('./sw.js')
-            .then(() => console.log('Service Worker Registered'))
-            .catch(error => console.log('Service Worker registration failed:', error));
-    }
-    // DOM要素の取得
     const elements = {
-        calculationMode: document.getElementById('calculation-mode'),
-        customSettings: document.getElementById('custom-settings'),
-        customHourlyWage: document.getElementById('custom-hourly-wage'),
-        customNightPremium: document.getElementById('custom-night-premium'),
-        targetMonthInput: document.getElementById('target-month'),
-        workDaysInput: document.getElementById('work-days'),
+        initialChoiceOverlay: document.getElementById('initial-choice-overlay'), initialChoiceButton: document.getElementById('initial-choice-button'),
+        modeSelectionRadios: document.querySelectorAll('input[name="calculationMode"]'), manualSettings: document.getElementById('manual-settings'),
+        manualHourlyWage: document.getElementById('manual-hourly-wage'), manualNightPremium: document.getElementById('manual-night-premium'), manualUnionFee: document.getElementById('manual-union-fee'),
+        targetMonthInput: document.getElementById('target-month'), workDaysInput: document.getElementById('work-days'),
         hourInputMode: document.getElementById('hour-input-mode'),
-        totalHoursDecimalInput: document.getElementById('total-hours-decimal-input'),
-        totalDecimalHours: document.getElementById('total-decimal-hours'),
-        totalHoursHmInput: document.getElementById('total-hours-hm-input'),
-        totalHHours: document.getElementById('total-h-hours'),
-        totalMMinutes: document.getElementById('total-m-minutes'),
-        nightHoursDecimalInput: document.getElementById('night-hours-decimal-input'),
-        nightDecimalHours: document.getElementById('night-decimal-hours'),
-        nightHoursHmInput: document.getElementById('night-hours-hm-input'),
-        nightHHours: document.getElementById('night-h-hours'),
-        nightMMinutes: document.getElementById('night-m-minutes'),
-        makanaiSection: document.getElementById('makanai-section'),
-        makanaiInputMode: document.getElementById('makanai-input-mode'),
-        makanaiCountGroup: document.getElementById('makanai-count-group'),
-        makanaiAmountGroup: document.getElementById('makanai-amount-group'),
-        makanaiCount: document.getElementById('makanai-count'),
-        makanaiAmount: document.getElementById('makanai-amount'),
-        addUpdateButton: document.getElementById('add-update-button'),
-        viewYear: document.getElementById('view-year'),
-        viewMonth: document.getElementById('view-month'),
-        summaryTableBody: document.getElementById('summary-table-body'),
-        totalDays: document.getElementById('total-days'),
-        totalHours: document.getElementById('total-hours'),
-        totalGross: document.getElementById('total-gross'),
-        totalMakanai: document.getElementById('total-makanai'),
-        totalUnion: document.getElementById('total-union'),
-        totalNet: document.getElementById('total-net'),
-        projectedNet: document.getElementById('projected-net'),
-        wallsSection: document.getElementById('walls-section'),
-    };
-
-    // アプリケーションの状態管理
-    let state = {
-        settings: { mode: 'marugame', hourlyWage: 1200, nightPremium: 25 },
-        monthlyData: {}
+        totalDecimalHours: document.getElementById('total-decimal-hours'), totalHHours: document.getElementById('total-h-hours'), totalMMinutes: document.getElementById('total-m-minutes'),
+        regularNightDecimalHours: document.getElementById('regular-night-decimal-hours'), regularNightHHours: document.getElementById('regular-night-h-hours'), regularNightMMinutes: document.getElementById('regular-night-m-minutes'),
+        specialPayDetails: document.getElementById('special-pay-details'), specialHourlyWage: document.getElementById('special-hourly-wage'),
+        specialDecimalHours: document.getElementById('special-decimal-hours'), specialHHours: document.getElementById('special-h-hours'), specialMMinutes: document.getElementById('special-m-minutes'),
+        specialNightDecimalHours: document.getElementById('special-night-decimal-hours'), specialNightHHours: document.getElementById('special-night-h-hours'), specialNightMMinutes: document.getElementById('special-night-m-minutes'),
+        otherPayDetails: document.getElementById('other-pay-details'), otherPayAmount: document.getElementById('other-pay-amount'), otherPayNote: document.getElementById('other-pay-note'),
+        makanaiSection: document.getElementById('makanai-section'), makanaiInputMode: document.getElementById('makanai-input-mode'),
+        makanaiCountGroup: document.getElementById('makanai-count-group'), makanaiAmountGroup: document.getElementById('makanai-amount-group'),
+        makanaiCount: document.getElementById('makanai-count'), makanaiAmount: document.getElementById('makanai-amount'),
+        addUpdateButton: document.getElementById('add-update-button'), viewYear: document.getElementById('view-year'),
+        viewMonth: document.getElementById('view-month'), summaryTableBody: document.getElementById('summary-table-body'),
+        totalDays: document.getElementById('total-days'), totalHours: document.getElementById('total-hours'),
+        totalGross: document.getElementById('total-gross'), totalMakanai: document.getElementById('total-makanai'),
+        totalUnion: document.getElementById('total-union'), totalNet: document.getElementById('total-net'),
+        projectedNet: document.getElementById('projected-net'), wallsSection: document.getElementById('walls-section'),
+        graphOnOffSwitch: document.getElementById('graph-on-off-switch'),
+        graphArea: document.getElementById('graph-area'),
+        graphTargetCheckboxes: document.querySelectorAll('.graph-controls input[data-target]'),
+        salaryChart: document.getElementById('salary-chart'),
     };
     
-    const MARUGAME_DEFAULTS = { hourlyWage: 1200, nightPremium: 0.25, makanaiCostPerMeal: 120 };
-    const WALLS = [
-        { limit: 1000000, name: "住民税" }, { limit: 1030000, name: "所得税 / 扶養控除" }, { limit: 1060000, name: "社会保険①" },
-        { limit: 1300000, name: "社会保険②" }, { limit: 1500000, name: "配偶者特別控除" }, { limit: 2010000, name: "控除終了" }
-    ];
+    const uiGroups = {
+        total: { decimal: document.getElementById('total-hours-decimal-input'), hm: document.getElementById('total-hours-hm-input') },
+        regularNight: { decimal: document.getElementById('regular-night-hours-decimal-input'), hm: document.getElementById('regular-night-hours-hm-input') },
+        special: { decimal: document.getElementById('special-hours-decimal-input'), hm: document.getElementById('special-hours-hm-input') },
+        specialNight: { decimal: document.getElementById('special-night-hours-decimal-input'), hm: document.getElementById('special-night-hours-hm-input') }
+    };
 
-    function saveData() { localStorage.setItem('salaryCalculatorState', JSON.stringify(state)); }
-    function loadData() {
-        const savedState = localStorage.getItem('salaryCalculatorState');
-        if (savedState) { state = JSON.parse(savedState); }
-    }
-
-    function updateSettingsUI() {
-        elements.calculationMode.value = state.settings.mode;
-        const isMarugame = state.settings.mode === 'marugame';
-        elements.customSettings.classList.toggle('hidden', isMarugame);
-        elements.makanaiSection.classList.toggle('hidden', !isMarugame);
-        if (!isMarugame) {
-            elements.customHourlyWage.value = state.settings.hourlyWage;
-            elements.customNightPremium.value = state.settings.nightPremium;
+    let state = {};
+    const getDefaultState = () => ({
+        settings: { mode: null, hourlyWage: 1200, nightPremium: 25, unionFee: 0 },
+        monthlyData: {},
+        graphSettings: {
+            showGraph: true,
+            series: { gross: true, net: true, days: false }
         }
-    }
+    });
+    
+    const WALLS = [ { limit: 1000000, name: "住民税" }, { limit: 1030000, name: "所得税/扶養" }, { limit: 1060000, name: "社会保険①" }, { limit: 1300000, name: "社会保険②" }, { limit: 1500000, name: "配偶者特別控除" }, { limit: 2010000, name: "控除終了" }];
+    let chartInstance = null;
 
-    function updateHourInputUI() {
+    const saveData = () => localStorage.setItem('salaryCalculatorState', JSON.stringify(state));
+    const loadData = () => {
+        const savedState = localStorage.getItem('salaryCalculatorState');
+        const defaultState = getDefaultState();
+        state = defaultState;
+        if (savedState) {
+            try {
+                const loadedState = JSON.parse(savedState);
+                if (loadedState.settings && loadedState.settings.mode === 'marugame') loadedState.settings.mode = 'my_standard';
+                if (loadedState.settings && loadedState.settings.mode === 'custom') loadedState.settings.mode = 'manual';
+                state.settings = { ...defaultState.settings, ...(loadedState.settings || {}) };
+                state.monthlyData = loadedState.monthlyData || {};
+                state.graphSettings = { ...defaultState.graphSettings, ...(loadedState.graphSettings || {}) };
+                if (typeof state.graphSettings.series.hours !== 'undefined') {
+                    delete state.graphSettings.series.hours;
+                    state.graphSettings.series.days = false;
+                }
+
+            } catch (e) {
+                console.error("Could not parse saved state:", e);
+                state = defaultState;
+            }
+        }
+    };
+    
+    const setupMainUI = () => {
+        const isMyStandard = state.settings.mode === 'my_standard';
+        elements.modeSelectionRadios.forEach(radio => {
+            radio.checked = radio.value === state.settings.mode;
+        });
+        elements.manualSettings.style.display = isMyStandard ? 'none' : 'block';
+        elements.makanaiSection.style.display = isMyStandard ? 'block' : 'none';
+        
+        elements.manualHourlyWage.value = state.settings.hourlyWage;
+        elements.manualNightPremium.value = state.settings.nightPremium;
+        elements.manualUnionFee.value = state.settings.unionFee;
+
+        updateHourInputUI(); updateMakanaiInputUI(); updateGraphControlsUI();
+        populateYearFilter(); renderTableAndChart();
+        loadDataIntoForm();
+    };
+
+    const updateGraphControlsUI = () => {
+        elements.graphOnOffSwitch.checked = state.graphSettings.showGraph;
+        elements.graphArea.style.display = state.graphSettings.showGraph ? 'block' : 'none';
+        elements.graphTargetCheckboxes.forEach(cb => { cb.checked = state.graphSettings.series[cb.dataset.target]; });
+    };
+    
+    const updateHourInputUI = () => {
         const isDecimal = elements.hourInputMode.value === 'decimal';
-        elements.totalHoursDecimalInput.classList.toggle('hidden', !isDecimal);
-        elements.totalHoursHmInput.classList.toggle('hidden', isDecimal);
-        elements.nightHoursDecimalInput.classList.toggle('hidden', !isDecimal);
-        elements.nightHoursHmInput.classList.toggle('hidden', isDecimal);
-    }
+        for (const key in uiGroups) { uiGroups[key].decimal.style.display = isDecimal ? 'block' : 'none'; uiGroups[key].hm.style.display = isDecimal ? 'none' : 'flex'; }
+    };
     
-    function updateMakanaiInputUI() {
+    const updateMakanaiInputUI = () => {
         const isCount = elements.makanaiInputMode.value === 'count';
-        elements.makanaiCountGroup.classList.toggle('hidden', !isCount);
-        elements.makanaiAmountGroup.classList.toggle('hidden', isCount);
-    }
+        elements.makanaiCountGroup.style.display = isCount ? 'block' : 'none';
+        elements.makanaiAmountGroup.style.display = isCount ? 'none' : 'block';
+    };
 
-    function updateView() {
-        updateSettingsUI();
-        updateHourInputUI();
-        updateMakanaiInputUI();
-        populateYearFilter();
-        renderTable();
-    }
-    
-    function populateYearFilter() {
-        const years = new Set(Object.keys(state.monthlyData).map(key => key.substring(0, 4)));
+    const populateYearFilter = () => {
+        const years = new Set(Object.keys(state.monthlyData).map(k => k.substring(0, 4)));
         years.add(new Date().getFullYear().toString());
         const sortedYears = Array.from(years).sort((a, b) => b - a);
-        const currentYear = elements.viewYear.value;
-        elements.viewYear.innerHTML = '';
-        sortedYears.forEach(year => {
-            const option = document.createElement('option');
-            option.value = year;
-            option.textContent = `${year}年度`;
-            elements.viewYear.add(option);
-        });
-        if (sortedYears.includes(currentYear)) {
-            elements.viewYear.value = currentYear;
-        }
-    }
+        const currentVal = elements.viewYear.value;
+        elements.viewYear.innerHTML = sortedYears.map(y => `<option value="${y}">${y}年度</option>`).join('');
+        if (sortedYears.includes(currentVal)) elements.viewYear.value = currentVal;
+    };
 
-    function calculateUnionFee(gross, isFirstMonth) {
-        if (isFirstMonth) return 0;
-        const fee = Math.min(gross * 0.01 + 400, 1000);
-        return Math.floor(fee / 100) * 100; // 100円未満切り捨て
-    }
-    
-    function formatHours(decimalHours) {
-        if (isNaN(decimalHours) || decimalHours === 0) return "0時間0分";
-        const hours = Math.floor(decimalHours);
-        const minutes = Math.round((decimalHours - hours) * 60);
-        return `${hours}時間${minutes}分`;
-    }
-    
-    function formatCurrency(amount) { return Math.round(amount).toLocaleString(); }
+    const getMyStandardHourlyWage = (monthKey) => (monthKey >= "2025-09") ? 1300 : 1200;
+    const calculateMyStandardUnionFee = (gross, isFirst) => isFirst ? 0 : Math.floor(Math.min(gross * 0.01 + 400, 1000) / 100) * 100;
+    const formatHours = (h) => h ? `${Math.floor(h)}時間${Math.round((h - Math.floor(h)) * 60)}分` : "0時間0分";
+    const formatCurrency = (n) => Math.round(n || 0).toLocaleString();
 
-    function renderTable() {
-        elements.summaryTableBody.innerHTML = '';
+    const renderTableAndChart = () => {
         const selectedYear = elements.viewYear.value;
-        const selectedMonth = elements.viewMonth.value;
         if (!selectedYear) return;
 
-        let totals = { days: 0, hours: 0, gross: 0, makanai: 0, union: 0, net: 0, makanaiCount: 0 };
+        let totals = { days: 0, hours: 0, gross: 0, makanai: 0, union: 0, net: 0 };
         let processedMonths = 0;
-        let confirmedNetPaySum = 0;
-        
-        const dataKeys = Object.keys(state.monthlyData).filter(key => key.startsWith(selectedYear)).sort();
+        let chartData = { labels: [], gross: [], net: [], days: [] };
+        const dataKeys = Object.keys(state.monthlyData).filter(k => k.startsWith(selectedYear)).sort();
         const firstMonthKey = dataKeys.length > 0 ? dataKeys[0] : null;
+        let tableHTML = '';
 
         for (let i = 1; i <= 12; i++) {
             const monthKey = `${selectedYear}-${String(i).padStart(2, '0')}`;
-            if (selectedMonth !== 'all' && i != selectedMonth) continue;
-            
             const data = state.monthlyData[monthKey];
-            const row = document.createElement('tr');
+            let rowHTML = `<td>${i}月</td>`;
 
             if (data) {
-                const hourlyWage = data.settings.mode === 'marugame' ? MARUGAME_DEFAULTS.hourlyWage : data.settings.hourlyWage;
-                const nightPremiumRate = data.settings.mode === 'marugame' ? MARUGAME_DEFAULTS.nightPremium : (data.settings.nightPremium / 100);
-                
-                const basePay = data.totalHours * hourlyWage;
-                const nightPay = data.nightHours * hourlyWage * nightPremiumRate;
-                const gross = basePay + nightPay;
-
-                const makanaiCost = data.settings.mode === 'marugame' ? data.makanaiCost : 0;
-                const unionFee = data.settings.mode === 'marugame' ? calculateUnionFee(gross, monthKey === firstMonthKey) : 0;
+                const isMyStandard = data.settings.mode === 'my_standard';
+                const baseWage = isMyStandard ? getMyStandardHourlyWage(monthKey) : (data.settings.hourlyWage || 0);
+                const nightPremiumRate = isMyStandard ? 0.25 : ((data.settings.nightPremium || 0) / 100);
+                const specialHours = data.specialHours || 0;
+                const specialNightHours = data.specialNightHours || 0;
+                const specialWage = data.specialHourlyWage || 0;
+                const regularTotalHours = Math.max(0, data.totalHours - specialHours);
+                const regularNightHours = data.regularNightHours || 0;
+                const regularPay = regularTotalHours * baseWage + regularNightHours * baseWage * nightPremiumRate;
+                const specialPay = specialHours * specialWage + specialNightHours * specialWage * nightPremiumRate;
+                const otherPay = data.otherPayAmount || 0;
+                const gross = regularPay + specialPay + otherPay;
+                const makanaiCost = isMyStandard ? (data.makanaiCost || 0) : 0;
+                const unionFee = isMyStandard ? calculateMyStandardUnionFee(gross, monthKey === firstMonthKey) : (data.settings.unionFee || 0);
                 const net = gross - makanaiCost - unionFee;
-                
-                row.innerHTML = `
-                    <td>${i}月</td>
-                    <td>${data.days}日</td>
-                    <td>${formatHours(data.totalHours)}</td>
-                    <td>${formatCurrency(gross)}円</td>
-                    <td class="deduction-col">${formatCurrency(makanaiCost)}円 / ${data.makanaiCount}回</td>
-                    <td class="deduction-col">${formatCurrency(unionFee)}円</td>
-                    <td>${formatCurrency(net)}円</td>
-                `;
-                
-                totals.days += data.days;
-                totals.hours += data.totalHours;
-                totals.gross += gross;
-                totals.makanai += makanaiCost;
-                totals.union += unionFee;
-                totals.net += net;
+                rowHTML += `<td>${data.days}日</td><td>${formatHours(data.totalHours)}</td><td>${formatCurrency(gross)}円</td><td class="deduction-col">${formatCurrency(makanaiCost)}円/${data.makanaiCount || 0}回</td><td class="deduction-col">${formatCurrency(unionFee)}円</td><td>${formatCurrency(net)}円</td>`;
+                totals.days += data.days; totals.hours += data.totalHours; totals.gross += gross; totals.makanai += makanaiCost; totals.union += unionFee; totals.net += net;
                 processedMonths++;
-                confirmedNetPaySum += net;
+                chartData.labels.push(`${i}月`); chartData.gross.push(gross); chartData.net.push(net); chartData.days.push(data.days);
             } else {
-                 row.innerHTML = `<td>${i}月</td><td>-</td><td>-</td><td>-</td><td class="deduction-col">-</td><td class="deduction-col">-</td><td>-</td>`;
+                 rowHTML += `<td>-</td><td>-</td><td>-</td><td class="deduction-col">-</td><td class="deduction-col">-</td><td>-</td>`;
+                 chartData.labels.push(`${i}月`); chartData.gross.push(null); chartData.net.push(null); chartData.days.push(null);
             }
-            elements.summaryTableBody.appendChild(row);
+            tableHTML += `<tr>${rowHTML}</tr>`;
         }
-
-        elements.totalDays.textContent = totals.days;
-        elements.totalHours.textContent = formatHours(totals.hours);
-        elements.totalGross.textContent = formatCurrency(totals.gross);
-        elements.totalMakanai.textContent = formatCurrency(totals.makanai);
-        elements.totalUnion.textContent = formatCurrency(totals.union);
-        elements.totalNet.textContent = formatCurrency(totals.net);
-
+        elements.summaryTableBody.innerHTML = tableHTML;
+        elements.totalDays.textContent = `${totals.days}日`; elements.totalHours.textContent = formatHours(totals.hours); elements.totalGross.textContent = `${formatCurrency(totals.gross)}円`; elements.totalMakanai.textContent = `${formatCurrency(totals.makanai)}円`; elements.totalUnion.textContent = `${formatCurrency(totals.union)}円`; elements.totalNet.textContent = `${formatCurrency(totals.net)}円`;
         let projectedNet = totals.net;
-        if (processedMonths > 0 && processedMonths < 12) {
-            const avgMonthlyNet = confirmedNetPaySum / processedMonths;
-            projectedNet = confirmedNetPaySum + (avgMonthlyNet * (12 - processedMonths));
-        }
-        elements.projectedNet.textContent = formatCurrency(projectedNet);
-        
+        if (processedMonths > 0 && processedMonths < 12) { projectedNet = (totals.net / processedMonths) * 12; }
+        elements.projectedNet.textContent = `${formatCurrency(projectedNet)}円`;
         renderWalls(totals.gross);
-    }
+        renderChart(chartData);
+    };
     
-    function renderWalls(currentGross) {
-        elements.wallsSection.innerHTML = '';
-        WALLS.forEach(wall => {
-            const p = document.createElement('p');
-            const remaining = wall.limit - currentGross;
-            p.innerHTML = (remaining > 0) 
-                ? `✅ ${wall.name}: 超過まであと <strong>${formatCurrency(remaining)}</strong> 円`
-                : `❎ ${wall.name}: <strong>${formatCurrency(Math.abs(remaining))}</strong> 円超過`;
-            if (remaining <= 100000) { p.classList.add('warning-red'); }
-            elements.wallsSection.appendChild(p);
-        });
-    }
+    const renderWalls = (gross) => {
+        elements.wallsSection.innerHTML = WALLS.map(wall => {
+            const remaining = wall.limit - gross;
+            const text = remaining > 0 ? `<span>✅ ${wall.name}:</span> <strong>超過まであと ${formatCurrency(remaining)} 円</strong>` : `<span>❎ ${wall.name}:</span> <strong>${formatCurrency(Math.abs(remaining))} 円超過</strong>`;
+            return `<p class="${remaining <= 100000 ? 'warning-red' : ''}">${text}</p>`;
+        }).join('');
+    };
 
-    function getHoursFromInput(type) {
-        const isDecimal = elements.hourInputMode.value === 'decimal';
-        if (type === 'total') {
-            if (isDecimal) return parseFloat(elements.totalDecimalHours.value) || 0;
-            const h = parseFloat(elements.totalHHours.value) || 0;
-            const m = parseFloat(elements.totalMMinutes.value) || 0;
-            return h + m / 60;
-        } else { // night
-            if (isDecimal) return parseFloat(elements.nightDecimalHours.value) || 0;
-            const h = parseFloat(elements.nightHHours.value) || 0;
-            const m = parseFloat(elements.nightMMinutes.value) || 0;
-            return h + m / 60;
+    const renderChart = () => {
+        if (!state.graphSettings.showGraph) {
+            if (chartInstance) {
+                chartInstance.destroy();
+                chartInstance = null;
+            }
+            return;
         }
-    }
+
+        const selectedYear = elements.viewYear.value;
+        if (!selectedYear) return;
+
+        let chartData = { labels: [], gross: [], net: [], days: [] };
+        for (let i = 1; i <= 12; i++) {
+            const monthKey = `${selectedYear}-${String(i).padStart(2, '0')}`;
+            const data = state.monthlyData[monthKey];
+            chartData.labels.push(`${i}月`);
+            if (data) {
+                const isMyStandard = data.settings.mode === 'my_standard';
+                const baseWage = isMyStandard ? getMyStandardHourlyWage(monthKey) : (data.settings.hourlyWage || 0);
+                const nightPremiumRate = isMyStandard ? 0.25 : ((data.settings.nightPremium || 0) / 100);
+                const specialHours = data.specialHours || 0;
+                const specialNightHours = data.specialNightHours || 0;
+                const specialWage = data.specialHourlyWage || 0;
+                const regularTotalHours = Math.max(0, data.totalHours - specialHours);
+                const regularNightHours = data.regularNightHours || 0;
+                const regularPay = regularTotalHours * baseWage + regularNightHours * baseWage * nightPremiumRate;
+                const specialPay = specialHours * specialWage + specialNightHours * specialWage * nightPremiumRate;
+                const otherPay = data.otherPayAmount || 0;
+                const gross = regularPay + specialPay + otherPay;
+                const makanaiCost = isMyStandard ? (data.makanaiCost || 0) : 0;
+                const unionFee = isMyStandard ? calculateMyStandardUnionFee(gross, false) : (data.settings.unionFee || 0);
+                const net = gross - makanaiCost - unionFee;
+                chartData.gross.push(gross);
+                chartData.net.push(net);
+                chartData.days.push(data.days);
+            } else {
+                chartData.gross.push(null); chartData.net.push(null); chartData.days.push(null);
+            }
+        }
+        
+        const datasets = [];
+        const colors = { gross: { bg: 'rgba(54, 162, 235, 0.6)', border: 'rgba(54, 162, 235, 1)' }, net: { bg: 'rgba(75, 192, 192, 0.6)', border: 'rgba(75, 192, 192, 1)' }, days: { bg: 'rgba(255, 159, 64, 0.6)', border: 'rgba(255, 159, 64, 1)' } };
+        const labels = { gross: '総支給額', net: '差引支給額', days: '総労働日数' };
+        
+        for (const target in state.graphSettings.series) {
+            if (state.graphSettings.series[target]) {
+                datasets.push({
+                    type: 'bar', label: labels[target],
+                    data: chartData[target], backgroundColor: colors[target].bg,
+                    borderColor: colors[target].border, yAxisID: target === 'days' ? 'y-days' : 'y-amount',
+                    borderWidth: 1
+                });
+            }
+        }
+
+        const options = { responsive: true, maintainAspectRatio: false, scales: { 'y-amount': { type: 'linear', display: true, position: 'left', title: { display: true, text: '金額 (円)' }, ticks: { callback: value => `${value/10000}万` }}, 'y-days': { type: 'linear', display: true, position: 'right', title: { display: true, text: '日数 (日)' }, grid: { drawOnChartArea: false } } } };
+        if (chartInstance) chartInstance.destroy();
+        chartInstance = new Chart(elements.salaryChart, { type: 'bar', data: { labels: chartData.labels, datasets }, options });
+    };
+
+    const getHoursFromInput = (type) => {
+        const isDecimal = elements.hourInputMode.value === 'decimal';
+        const hEl = document.getElementById(`${type}-${isDecimal ? 'decimal-hours' : 'h-hours'}`);
+        const mEl = document.getElementById(`${type}-m-minutes`);
+        if (!hEl) return 0;
+        if (isDecimal) return parseFloat(hEl.value) || 0;
+        return (parseFloat(hEl.value) || 0) + (parseFloat(mEl.value) || 0) / 60;
+    };
     
-    function addOrUpdateData() {
+    const addOrUpdateData = () => {
         const targetMonth = elements.targetMonthInput.value;
         if (!targetMonth) { alert('対象年月を選択してください。'); return; }
-
         let makanaiCost = 0, makanaiCount = 0;
-        if (state.settings.mode === 'marugame') {
+        if (state.settings.mode === 'my_standard') {
+            const MAKANAI_COST_PER_MEAL = 120;
             if (elements.makanaiInputMode.value === 'count') {
                 makanaiCount = parseInt(elements.makanaiCount.value) || 0;
-                makanaiCost = makanaiCount * MARUGAME_DEFAULTS.makanaiCostPerMeal;
+                makanaiCost = makanaiCount * MAKANAI_COST_PER_MEAL;
             } else {
                 makanaiCost = parseInt(elements.makanaiAmount.value) || 0;
-                makanaiCount = Math.round(makanaiCost / MARUGAME_DEFAULTS.makanaiCostPerMeal);
+                makanaiCount = Math.round(makanaiCost / MAKANAI_COST_PER_MEAL);
             }
         }
-
         state.monthlyData[targetMonth] = {
-            days: parseInt(elements.workDaysInput.value) || 0,
-            totalHours: getHoursFromInput('total'),
-            nightHours: getHoursFromInput('night'),
-            makanaiCost: makanaiCost,
-            makanaiCount: makanaiCount,
-            settings: { ...state.settings }
+            days: parseInt(elements.workDaysInput.value) || 0, totalHours: getHoursFromInput('total'),
+            regularNightHours: getHoursFromInput('regularNight'), specialHours: getHoursFromInput('special'),
+            specialNightHours: getHoursFromInput('specialNight'), specialHourlyWage: parseFloat(elements.specialHourlyWage.value) || 0,
+            otherPayAmount: parseFloat(elements.otherPayAmount.value) || 0, otherPayNote: elements.otherPayNote.value || '',
+            makanaiCost, makanaiCount, settings: { ...state.settings }
         };
-        
-        saveData();
-        alert(`${targetMonth} のデータを登録・更新しました。`);
-        updateView();
-    }
+        saveData(); alert(`${targetMonth} のデータを登録・更新しました。`); setupMainUI();
+    };
 
-    function loadDataIntoForm() {
+    const loadDataIntoForm = () => {
         const targetMonth = elements.targetMonthInput.value;
         const data = state.monthlyData[targetMonth];
-        const fieldsToReset = [
-            elements.workDaysInput, elements.totalDecimalHours, elements.totalHHours, elements.totalMMinutes,
-            elements.nightDecimalHours, elements.nightHHours, elements.nightMMinutes, elements.makanaiCount, elements.makanaiAmount
-        ];
+        const fieldsToReset = ['workDaysInput', 'totalDecimalHours', 'totalHHours', 'totalMMinutes', 'regularNightDecimalHours', 'regularNightHHours', 'regularNightMMinutes', 'specialDecimalHours', 'specialHHours', 'specialMMinutes', 'specialHourlyWage', 'specialNightDecimalHours', 'specialNightHHours', 'specialNightMMinutes', 'otherPayAmount', 'otherPayNote', 'makanaiCount', 'makanaiAmount'];
         if (data) {
-            elements.workDaysInput.value = data.days;
-            // Total hours
-            elements.totalDecimalHours.value = data.totalHours.toFixed(2);
-            elements.totalHHours.value = Math.floor(data.totalHours);
-            elements.totalMMinutes.value = Math.round((data.totalHours - Math.floor(data.totalHours)) * 60);
-            // Night hours
-            elements.nightDecimalHours.value = data.nightHours.toFixed(2);
-            elements.nightHHours.value = Math.floor(data.nightHours);
-            elements.nightMMinutes.value = Math.round((data.nightHours - Math.floor(data.nightHours)) * 60);
-            // Makanai
-            elements.makanaiCount.value = data.makanaiCount;
-            elements.makanaiAmount.value = data.makanaiCost;
+            elements.workDaysInput.value = data.days || '';
+            ['total', 'regularNight', 'special', 'specialNight'].forEach(type => {
+                const hours = data[`${type}Hours`] || 0;
+                const prefix = type.replace('Hours', '');
+                document.getElementById(`${prefix}-decimal-hours`).value = hours > 0 ? hours.toFixed(2) : '';
+                document.getElementById(`${prefix}-h-hours`).value = hours > 0 ? Math.floor(hours) : '';
+                document.getElementById(`${prefix}-m-minutes`).value = hours > 0 ? Math.round((hours - Math.floor(hours)) * 60) : '';
+            });
+            elements.specialHourlyWage.value = data.specialHourlyWage || '';
+            elements.otherPayAmount.value = data.otherPayAmount || '';
+            elements.otherPayNote.value = data.otherPayNote || '';
+            elements.makanaiCount.value = data.makanaiCount || '';
+            elements.makanaiAmount.value = data.makanaiCost || '';
+            elements.specialPayDetails.open = !!(data.specialHours || data.specialHourlyWage);
+            elements.otherPayDetails.open = !!(data.otherPayAmount || data.otherPayNote);
         } else {
-            fieldsToReset.forEach(el => el.value = '');
+            fieldsToReset.forEach(key => elements[key] && (elements[key].value = ''));
+            elements.specialPayDetails.open = false;
+            elements.otherPayDetails.open = false;
         }
-    }
+    };
 
-    // --- イベントリスナー ---
-    elements.calculationMode.addEventListener('change', (e) => { state.settings.mode = e.target.value; saveData(); updateView(); });
-    elements.customHourlyWage.addEventListener('input', (e) => { state.settings.hourlyWage = parseFloat(e.target.value) || 0; saveData(); });
-    elements.customNightPremium.addEventListener('input', (e) => { state.settings.nightPremium = parseFloat(e.target.value) || 0; saveData(); });
+    elements.initialChoiceButton.addEventListener('click', () => {
+        const selectedMode = document.querySelector('input[name="initialCalculationMode"]:checked').value;
+        state.settings.mode = selectedMode;
+        saveData();
+        elements.initialChoiceOverlay.style.display = 'none';
+        setTimeout(() => {
+            initialize(true);
+        }, 10);
+    });
+    
+    elements.modeSelectionRadios.forEach(radio => {
+        radio.addEventListener('change', (e) => {
+            if (e.target.checked) {
+                state.settings.mode = e.target.value;
+                saveData();
+                setupMainUI();
+            }
+        });
+    });
+
+    elements.manualHourlyWage.addEventListener('input', (e) => { state.settings.hourlyWage = parseFloat(e.target.value) || 0; saveData(); });
+    elements.manualNightPremium.addEventListener('input', (e) => { state.settings.nightPremium = parseFloat(e.target.value) || 0; saveData(); });
+    elements.manualUnionFee.addEventListener('input', (e) => { state.settings.unionFee = parseFloat(e.target.value) || 0; saveData(); });
+    
     elements.hourInputMode.addEventListener('change', updateHourInputUI);
     elements.makanaiInputMode.addEventListener('change', updateMakanaiInputUI);
     elements.addUpdateButton.addEventListener('click', addOrUpdateData);
-    elements.viewYear.addEventListener('change', renderTable);
-    elements.viewMonth.addEventListener('change', renderTable);
+    elements.viewYear.addEventListener('change', renderTableAndChart);
+    elements.viewMonth.addEventListener('change', renderTableAndChart);
     elements.targetMonthInput.addEventListener('change', loadDataIntoForm);
+    
+    elements.graphOnOffSwitch.addEventListener('change', (e) => {
+        state.graphSettings.showGraph = e.target.checked;
+        saveData();
+        updateGraphControlsUI();
+        renderTableAndChart();
+    });
+    elements.graphTargetCheckboxes.forEach(cb => { cb.addEventListener('change', (e) => { state.graphSettings.series[e.target.dataset.target] = e.target.checked; saveData(); renderTableAndChart(); }); });
 
-    // --- 初期化処理 ---
-    loadData();
-    const now = new Date();
-    elements.targetMonthInput.value = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}`;
-    updateView();
-    loadDataIntoForm();
+    function initialize(isFirstSetup = false) {
+        if (!isFirstSetup) {
+            loadData();
+        }
+        if (!state.settings.mode) {
+            elements.initialChoiceOverlay.style.display = 'flex';
+        } else {
+            const now = new Date();
+            elements.targetMonthInput.value = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}`;
+            setupMainUI();
+        }
+    }
+
+    initialize();
 });
 </script>
-
 </body>
 </html>
