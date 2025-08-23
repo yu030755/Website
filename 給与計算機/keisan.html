@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>給与管理アプリ</title>
+    <title>給与計算機</title>
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
     <style>
         :root {
@@ -97,7 +97,7 @@
 <body>
     <div id="initial-choice-overlay">
         <div id="initial-choice-dialog">
-            <h2>初期設定をしましょう！</h2>
+            <h2>ようこそ！</h2>
             <div class="form-group" style="text-align: left; margin-top: 20px;">
                 <label>最初に給与の計算方法を選択してください。</label>
                 <div class="radio-group">
@@ -110,10 +110,9 @@
     </div>
 
     <div class="container">
-        <header><h1>給与管理アプリ </h1></header>
+        <header><h1>給与計算機</h1></header>
 
         <main>
-入力情報は全て端末上に保存されます。<br>サーバ上には送信されないため安全です。<br>そのためバックアップ等は一切できません。
             <div class="card">
                 <h2>基本設定</h2>
                 <div class="form-group">
@@ -138,19 +137,19 @@
                 <div class="form-group"><label for="work-days">出勤日数</label><input type="number" id="work-days"></div>
                 <div class="form-group"><label for="hour-input-mode">勤務時間入力方法</label><select id="hour-input-mode"><option value="decimal">時間単位</option><option value="hm">時間と分</option></select></div>
                 
-                <div id="total-hours-decimal-input"><label for="total-decimal-hours">総労働時間</label><input type="number" id="total-decimal-hours" placeholder="＊＊.＊＊の形式で入力"></div>
+                <div id="total-hours-decimal-input"><label for="total-decimal-hours">総労働時間</label><input type="number" id="total-decimal-hours" placeholder="特別手当の時間も含む合計"></div>
                 <div id="total-hours-hm-input" style="display: none;" class="input-group"><div><label>総労働時間</label><input type="number" id="total-h-hours" placeholder="時間"></div><div><label>&nbsp;</label><input type="number" id="total-m-minutes" placeholder="分"></div></div>
                 
-                <div id="regular-night-hours-decimal-input" class="form-group"><label for="regular-night-decimal-hours">深夜労働時間</label><input type="number" id="regular-night-decimal-hours"></div>
-                <div id="regular-night-hours-hm-input" style="display: none;" class="input-group form-group"><div><label>深夜労働時間</label><input type="number" id="regular-night-h-hours" placeholder="時間"></div><div><label>&nbsp;</label><input type="number" id="regular-night-m-minutes" placeholder="分"></div></div>
+                <div id="regular-night-hours-decimal-input" class="form-group"><label for="regular-night-decimal-hours">（通常）深夜労働時間</label><input type="number" id="regular-night-decimal-hours"></div>
+                <div id="regular-night-hours-hm-input" style="display: none;" class="input-group form-group"><div><label>（通常）深夜労働時間</label><input type="number" id="regular-night-h-hours" placeholder="時間"></div><div><label>&nbsp;</label><input type="number" id="regular-night-m-minutes" placeholder="分"></div></div>
 
                 <details id="special-pay-details" class="form-group">
                     <summary>▼ 特別手当（時給アップ）を追加</summary>
                     <div class="form-group"><label for="special-hourly-wage">特別時給額 (円)</label><input type="number" id="special-hourly-wage" placeholder="例: 1500"></div>
                     <div id="special-hours-decimal-input"><label for="special-decimal-hours">対象労働時間</label><input type="number" id="special-decimal-hours"></div>
                     <div id="special-hours-hm-input" style="display: none;" class="input-group"><div><label>対象労働時間</label><input type="number" id="special-h-hours" placeholder="時間"></div><div><label>&nbsp;</label><input type="number" id="special-m-minutes" placeholder="分"></div></div>
-                    <div id="special-night-hours-decimal-input"><label for="special-night-decimal-hours">深夜労働時間</label><input type="number" id="special-night-decimal-hours"></div>
-                    <div id="special-night-hours-hm-input" style="display: none;" class="input-group"><div><label>深夜労働時間</label><input type="number" id="special-night-h-hours" placeholder="時間"></div><div><label>&nbsp;</label><input type="number" id="special-night-m-minutes" placeholder="分"></div></div>
+                    <div id="special-night-hours-decimal-input"><label for="special-night-decimal-hours">うち、深夜労働時間</label><input type="number" id="special-night-decimal-hours"></div>
+                    <div id="special-night-hours-hm-input" style="display: none;" class="input-group"><div><label>うち、深夜労働時間</label><input type="number" id="special-night-h-hours" placeholder="時間"></div><div><label>&nbsp;</label><input type="number" id="special-night-m-minutes" placeholder="分"></div></div>
                 </details>
 
                  <details id="other-pay-details" class="form-group">
@@ -289,7 +288,6 @@ document.addEventListener('DOMContentLoaded', () => {
                     delete state.graphSettings.series.hours;
                     state.graphSettings.series.days = false;
                 }
-
             } catch (e) {
                 console.error("Could not parse saved state:", e);
                 state = defaultState;
@@ -351,7 +349,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
         let totals = { days: 0, hours: 0, gross: 0, makanai: 0, union: 0, net: 0 };
         let processedMonths = 0;
-        let chartData = { labels: [], gross: [], net: [], days: [] };
+        
         const dataKeys = Object.keys(state.monthlyData).filter(k => k.startsWith(selectedYear)).sort();
         const firstMonthKey = dataKeys.length > 0 ? dataKeys[0] : null;
         let tableHTML = '';
@@ -380,10 +378,8 @@ document.addEventListener('DOMContentLoaded', () => {
                 rowHTML += `<td>${data.days}日</td><td>${formatHours(data.totalHours)}</td><td>${formatCurrency(gross)}円</td><td class="deduction-col">${formatCurrency(makanaiCost)}円/${data.makanaiCount || 0}回</td><td class="deduction-col">${formatCurrency(unionFee)}円</td><td>${formatCurrency(net)}円</td>`;
                 totals.days += data.days; totals.hours += data.totalHours; totals.gross += gross; totals.makanai += makanaiCost; totals.union += unionFee; totals.net += net;
                 processedMonths++;
-                chartData.labels.push(`${i}月`); chartData.gross.push(gross); chartData.net.push(net); chartData.days.push(data.days);
             } else {
                  rowHTML += `<td>-</td><td>-</td><td>-</td><td class="deduction-col">-</td><td class="deduction-col">-</td><td>-</td>`;
-                 chartData.labels.push(`${i}月`); chartData.gross.push(null); chartData.net.push(null); chartData.days.push(null);
             }
             tableHTML += `<tr>${rowHTML}</tr>`;
         }
@@ -393,7 +389,7 @@ document.addEventListener('DOMContentLoaded', () => {
         if (processedMonths > 0 && processedMonths < 12) { projectedNet = (totals.net / processedMonths) * 12; }
         elements.projectedNet.textContent = `${formatCurrency(projectedNet)}円`;
         renderWalls(totals.gross);
-        renderChart(chartData);
+        renderChart();
     };
     
     const renderWalls = (gross) => {
@@ -406,13 +402,9 @@ document.addEventListener('DOMContentLoaded', () => {
 
     const renderChart = () => {
         if (!state.graphSettings.showGraph) {
-            if (chartInstance) {
-                chartInstance.destroy();
-                chartInstance = null;
-            }
+            if (chartInstance) { chartInstance.destroy(); chartInstance = null; }
             return;
         }
-
         const selectedYear = elements.viewYear.value;
         if (!selectedYear) return;
 
@@ -437,9 +429,7 @@ document.addEventListener('DOMContentLoaded', () => {
                 const makanaiCost = isMyStandard ? (data.makanaiCost || 0) : 0;
                 const unionFee = isMyStandard ? calculateMyStandardUnionFee(gross, false) : (data.settings.unionFee || 0);
                 const net = gross - makanaiCost - unionFee;
-                chartData.gross.push(gross);
-                chartData.net.push(net);
-                chartData.days.push(data.days);
+                chartData.gross.push(gross); chartData.net.push(net); chartData.days.push(data.days || 0);
             } else {
                 chartData.gross.push(null); chartData.net.push(null); chartData.days.push(null);
             }
@@ -460,7 +450,7 @@ document.addEventListener('DOMContentLoaded', () => {
             }
         }
 
-        const options = { responsive: true, maintainAspectRatio: false, scales: { 'y-amount': { type: 'linear', display: true, position: 'left', title: { display: true, text: '金額 (円)' }, ticks: { callback: value => `${value/10000}万` }}, 'y-days': { type: 'linear', display: true, position: 'right', title: { display: true, text: '日数 (日)' }, grid: { drawOnChartArea: false } } } };
+        const options = { responsive: true, maintainAspectRatio: false, scales: { 'y-amount': { type: 'linear', display: true, position: 'left', title: { display: true, text: '金額 (円)' }, ticks: { callback: value => `${value/10000}万` }}, 'y-days': { type: 'linear', display: true, position: 'right', title: { display: true, text: '日数 (日)' }, grid: { drawOnChartArea: false }, ticks: { stepSize: 1 } } } };
         if (chartInstance) chartInstance.destroy();
         chartInstance = new Chart(elements.salaryChart, { type: 'bar', data: { labels: chartData.labels, datasets }, options });
     };
@@ -532,7 +522,7 @@ document.addEventListener('DOMContentLoaded', () => {
         elements.initialChoiceOverlay.style.display = 'none';
         setTimeout(() => {
             initialize(true);
-        }, 10);
+        }, 0);
     });
     
     elements.modeSelectionRadios.forEach(radio => {
@@ -560,9 +550,9 @@ document.addEventListener('DOMContentLoaded', () => {
         state.graphSettings.showGraph = e.target.checked;
         saveData();
         updateGraphControlsUI();
-        renderTableAndChart();
+        renderChart();
     });
-    elements.graphTargetCheckboxes.forEach(cb => { cb.addEventListener('change', (e) => { state.graphSettings.series[e.target.dataset.target] = e.target.checked; saveData(); renderTableAndChart(); }); });
+    elements.graphTargetCheckboxes.forEach(cb => { cb.addEventListener('change', (e) => { state.graphSettings.series[e.target.dataset.target] = e.target.checked; saveData(); renderChart(); }); });
 
     function initialize(isFirstSetup = false) {
         if (!isFirstSetup) {
