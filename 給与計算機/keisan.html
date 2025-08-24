@@ -251,13 +251,6 @@ document.addEventListener('DOMContentLoaded', () => {
         salaryChart: document.getElementById('salary-chart'),
     };
     
-    const uiGroups = {
-        total: { decimal: document.getElementById('total-hours-decimal-input'), hm: document.getElementById('total-hours-hm-input') },
-        regularNight: { decimal: document.getElementById('regular-night-hours-decimal-input'), hm: document.getElementById('regular-night-hours-hm-input') },
-        special: { decimal: document.getElementById('special-hours-decimal-input'), hm: document.getElementById('special-hours-hm-input') },
-        specialNight: { decimal: document.getElementById('special-night-hours-decimal-input'), hm: document.getElementById('special-night-hours-hm-input') }
-    };
-
     let state = {};
     const getDefaultState = () => ({
         settings: { mode: null, hourlyWage: 1200, nightPremium: 25, unionFee: 0 },
@@ -288,28 +281,20 @@ document.addEventListener('DOMContentLoaded', () => {
                     delete state.graphSettings.series.hours;
                     state.graphSettings.series.days = false;
                 }
-            } catch (e) {
-                console.error("Could not parse saved state:", e);
-                state = defaultState;
-            }
+            } catch (e) { console.error("Could not parse saved state:", e); state = defaultState; }
         }
     };
     
     const setupMainUI = () => {
         const isMyStandard = state.settings.mode === 'my_standard';
-        elements.modeSelectionRadios.forEach(radio => {
-            radio.checked = radio.value === state.settings.mode;
-        });
+        elements.modeSelectionRadios.forEach(radio => { radio.checked = radio.value === state.settings.mode; });
         elements.manualSettings.style.display = isMyStandard ? 'none' : 'block';
         elements.makanaiSection.style.display = isMyStandard ? 'block' : 'none';
-        
         elements.manualHourlyWage.value = state.settings.hourlyWage;
         elements.manualNightPremium.value = state.settings.nightPremium;
         elements.manualUnionFee.value = state.settings.unionFee;
-
         updateHourInputUI(); updateMakanaiInputUI(); updateGraphControlsUI();
         populateYearFilter(); renderTableAndChart();
-        loadDataIntoForm();
     };
 
     const updateGraphControlsUI = () => {
@@ -320,7 +305,16 @@ document.addEventListener('DOMContentLoaded', () => {
     
     const updateHourInputUI = () => {
         const isDecimal = elements.hourInputMode.value === 'decimal';
-        for (const key in uiGroups) { uiGroups[key].decimal.style.display = isDecimal ? 'block' : 'none'; uiGroups[key].hm.style.display = isDecimal ? 'none' : 'flex'; }
+        const displayStyle = isDecimal ? 'block' : 'none';
+        const flexStyle = isDecimal ? 'none' : 'flex';
+        document.getElementById('total-hours-decimal-input').style.display = displayStyle;
+        document.getElementById('total-hours-hm-input').style.display = flexStyle;
+        document.getElementById('regular-night-hours-decimal-input').style.display = displayStyle;
+        document.getElementById('regular-night-hours-hm-input').style.display = flexStyle;
+        document.getElementById('special-hours-decimal-input').style.display = displayStyle;
+        document.getElementById('special-hours-hm-input').style.display = flexStyle;
+        document.getElementById('special-night-hours-decimal-input').style.display = displayStyle;
+        document.getElementById('special-night-hours-hm-input').style.display = flexStyle;
     };
     
     const updateMakanaiInputUI = () => {
@@ -333,9 +327,7 @@ document.addEventListener('DOMContentLoaded', () => {
         const years = new Set(Object.keys(state.monthlyData).map(k => k.substring(0, 4)));
         years.add(new Date().getFullYear().toString());
         const sortedYears = Array.from(years).sort((a, b) => b - a);
-        const currentVal = elements.viewYear.value;
         elements.viewYear.innerHTML = sortedYears.map(y => `<option value="${y}">${y}年度</option>`).join('');
-        if (sortedYears.includes(currentVal)) elements.viewYear.value = currentVal;
     };
 
     const getMyStandardHourlyWage = (monthKey) => (monthKey >= "2025-09") ? 1300 : 1200;
@@ -346,28 +338,21 @@ document.addEventListener('DOMContentLoaded', () => {
     const renderTableAndChart = () => {
         const selectedYear = elements.viewYear.value;
         if (!selectedYear) return;
-
         let totals = { days: 0, hours: 0, gross: 0, makanai: 0, union: 0, net: 0 };
         let processedMonths = 0;
-        
         const dataKeys = Object.keys(state.monthlyData).filter(k => k.startsWith(selectedYear)).sort();
         const firstMonthKey = dataKeys.length > 0 ? dataKeys[0] : null;
         let tableHTML = '';
-
         for (let i = 1; i <= 12; i++) {
             const monthKey = `${selectedYear}-${String(i).padStart(2, '0')}`;
             const data = state.monthlyData[monthKey];
             let rowHTML = `<td>${i}月</td>`;
-
             if (data) {
                 const isMyStandard = data.settings.mode === 'my_standard';
                 const baseWage = isMyStandard ? getMyStandardHourlyWage(monthKey) : (data.settings.hourlyWage || 0);
                 const nightPremiumRate = isMyStandard ? 0.25 : ((data.settings.nightPremium || 0) / 100);
-                const specialHours = data.specialHours || 0;
-                const specialNightHours = data.specialNightHours || 0;
-                const specialWage = data.specialHourlyWage || 0;
-                const regularTotalHours = Math.max(0, data.totalHours - specialHours);
-                const regularNightHours = data.regularNightHours || 0;
+                const specialHours = data.specialHours || 0, specialNightHours = data.specialNightHours || 0, specialWage = data.specialHourlyWage || 0;
+                const regularTotalHours = Math.max(0, data.totalHours - specialHours), regularNightHours = data.regularNightHours || 0;
                 const regularPay = regularTotalHours * baseWage + regularNightHours * baseWage * nightPremiumRate;
                 const specialPay = specialHours * specialWage + specialNightHours * specialWage * nightPremiumRate;
                 const otherPay = data.otherPayAmount || 0;
@@ -378,9 +363,7 @@ document.addEventListener('DOMContentLoaded', () => {
                 rowHTML += `<td>${data.days}日</td><td>${formatHours(data.totalHours)}</td><td>${formatCurrency(gross)}円</td><td class="deduction-col">${formatCurrency(makanaiCost)}円/${data.makanaiCount || 0}回</td><td class="deduction-col">${formatCurrency(unionFee)}円</td><td>${formatCurrency(net)}円</td>`;
                 totals.days += data.days; totals.hours += data.totalHours; totals.gross += gross; totals.makanai += makanaiCost; totals.union += unionFee; totals.net += net;
                 processedMonths++;
-            } else {
-                 rowHTML += `<td>-</td><td>-</td><td>-</td><td class="deduction-col">-</td><td class="deduction-col">-</td><td>-</td>`;
-            }
+            } else { rowHTML += `<td>-</td><td>-</td><td>-</td><td class="deduction-col">-</td><td class="deduction-col">-</td><td>-</td>`; }
             tableHTML += `<tr>${rowHTML}</tr>`;
         }
         elements.summaryTableBody.innerHTML = tableHTML;
@@ -402,12 +385,10 @@ document.addEventListener('DOMContentLoaded', () => {
 
     const renderChart = () => {
         if (!state.graphSettings.showGraph) {
-            if (chartInstance) { chartInstance.destroy(); chartInstance = null; }
-            return;
+            if (chartInstance) { chartInstance.destroy(); chartInstance = null; } return;
         }
         const selectedYear = elements.viewYear.value;
         if (!selectedYear) return;
-
         let chartData = { labels: [], gross: [], net: [], days: [] };
         for (let i = 1; i <= 12; i++) {
             const monthKey = `${selectedYear}-${String(i).padStart(2, '0')}`;
@@ -417,11 +398,8 @@ document.addEventListener('DOMContentLoaded', () => {
                 const isMyStandard = data.settings.mode === 'my_standard';
                 const baseWage = isMyStandard ? getMyStandardHourlyWage(monthKey) : (data.settings.hourlyWage || 0);
                 const nightPremiumRate = isMyStandard ? 0.25 : ((data.settings.nightPremium || 0) / 100);
-                const specialHours = data.specialHours || 0;
-                const specialNightHours = data.specialNightHours || 0;
-                const specialWage = data.specialHourlyWage || 0;
-                const regularTotalHours = Math.max(0, data.totalHours - specialHours);
-                const regularNightHours = data.regularNightHours || 0;
+                const specialHours = data.specialHours || 0, specialNightHours = data.specialNightHours || 0, specialWage = data.specialHourlyWage || 0;
+                const regularTotalHours = Math.max(0, data.totalHours - specialHours), regularNightHours = data.regularNightHours || 0;
                 const regularPay = regularTotalHours * baseWage + regularNightHours * baseWage * nightPremiumRate;
                 const specialPay = specialHours * specialWage + specialNightHours * specialWage * nightPremiumRate;
                 const otherPay = data.otherPayAmount || 0;
@@ -430,26 +408,16 @@ document.addEventListener('DOMContentLoaded', () => {
                 const unionFee = isMyStandard ? calculateMyStandardUnionFee(gross, false) : (data.settings.unionFee || 0);
                 const net = gross - makanaiCost - unionFee;
                 chartData.gross.push(gross); chartData.net.push(net); chartData.days.push(data.days || 0);
-            } else {
-                chartData.gross.push(null); chartData.net.push(null); chartData.days.push(null);
-            }
+            } else { chartData.gross.push(null); chartData.net.push(null); chartData.days.push(null); }
         }
-        
         const datasets = [];
         const colors = { gross: { bg: 'rgba(54, 162, 235, 0.6)', border: 'rgba(54, 162, 235, 1)' }, net: { bg: 'rgba(75, 192, 192, 0.6)', border: 'rgba(75, 192, 192, 1)' }, days: { bg: 'rgba(255, 159, 64, 0.6)', border: 'rgba(255, 159, 64, 1)' } };
         const labels = { gross: '総支給額', net: '差引支給額', days: '総労働日数' };
-        
         for (const target in state.graphSettings.series) {
             if (state.graphSettings.series[target]) {
-                datasets.push({
-                    type: 'bar', label: labels[target],
-                    data: chartData[target], backgroundColor: colors[target].bg,
-                    borderColor: colors[target].border, yAxisID: target === 'days' ? 'y-days' : 'y-amount',
-                    borderWidth: 1
-                });
+                datasets.push({ type: 'bar', label: labels[target], data: chartData[target], backgroundColor: colors[target].bg, borderColor: colors[target].border, yAxisID: target === 'days' ? 'y-days' : 'y-amount', borderWidth: 1 });
             }
         }
-
         const options = { responsive: true, maintainAspectRatio: false, scales: { 'y-amount': { type: 'linear', display: true, position: 'left', title: { display: true, text: '金額 (円)' }, ticks: { callback: value => `${value/10000}万` }}, 'y-days': { type: 'linear', display: true, position: 'right', title: { display: true, text: '日数 (日)' }, grid: { drawOnChartArea: false }, ticks: { stepSize: 1 } } } };
         if (chartInstance) chartInstance.destroy();
         chartInstance = new Chart(elements.salaryChart, { type: 'bar', data: { labels: chartData.labels, datasets }, options });
@@ -494,13 +462,17 @@ document.addEventListener('DOMContentLoaded', () => {
         const fieldsToReset = ['workDaysInput', 'totalDecimalHours', 'totalHHours', 'totalMMinutes', 'regularNightDecimalHours', 'regularNightHHours', 'regularNightMMinutes', 'specialDecimalHours', 'specialHHours', 'specialMMinutes', 'specialHourlyWage', 'specialNightDecimalHours', 'specialNightHHours', 'specialNightMMinutes', 'otherPayAmount', 'otherPayNote', 'makanaiCount', 'makanaiAmount'];
         if (data) {
             elements.workDaysInput.value = data.days || '';
-            ['total', 'regularNight', 'special', 'specialNight'].forEach(type => {
-                const hours = data[`${type}Hours`] || 0;
+            const setHourInputs = (type, hoursValue) => {
+                const hours = hoursValue || 0;
                 const prefix = type.replace('Hours', '');
                 document.getElementById(`${prefix}-decimal-hours`).value = hours > 0 ? hours.toFixed(2) : '';
                 document.getElementById(`${prefix}-h-hours`).value = hours > 0 ? Math.floor(hours) : '';
                 document.getElementById(`${prefix}-m-minutes`).value = hours > 0 ? Math.round((hours - Math.floor(hours)) * 60) : '';
-            });
+            };
+            setHourInputs('total', data.totalHours);
+            setHourInputs('regularNight', data.regularNightHours);
+            setHourInputs('special', data.specialHours);
+            setHourInputs('specialNight', data.specialNightHours);
             elements.specialHourlyWage.value = data.specialHourlyWage || '';
             elements.otherPayAmount.value = data.otherPayAmount || '';
             elements.otherPayNote.value = data.otherPayNote || '';
@@ -520,9 +492,7 @@ document.addEventListener('DOMContentLoaded', () => {
         state.settings.mode = selectedMode;
         saveData();
         elements.initialChoiceOverlay.style.display = 'none';
-        setTimeout(() => {
-            initialize(true);
-        }, 0);
+        initialize(true);
     });
     
     elements.modeSelectionRadios.forEach(radio => {
