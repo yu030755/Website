@@ -1,4 +1,4 @@
-<!DOCTYPE html>
+　<!DOCTYPE html>
 <html lang="ja">
 <head>
     <meta charset="UTF-8">
@@ -424,18 +424,16 @@ document.addEventListener('DOMContentLoaded', () => {
         chartInstance = new Chart(elements.salaryChart, { type: 'bar', data: { labels: chartData.labels, datasets }, options });
     };
 
-    const getHoursFromInput = (type) => {
-        const isDecimal = elements.hourInputMode.value === 'decimal';
-        const hEl = document.getElementById(`${type}-${isDecimal ? 'decimal-hours' : 'h-hours'}`);
-        const mEl = document.getElementById(`${type}-m-minutes`);
-        if (!hEl) return 0;
-        if (isDecimal) return parseFloat(hEl.value) || 0;
-        return (parseFloat(hEl.value) || 0) + (parseFloat(mEl.value) || 0) / 60;
-    };
-    
     const addOrUpdateData = () => {
         const targetMonth = elements.targetMonthInput.value;
         if (!targetMonth) { alert('対象年月を選択してください。'); return; }
+        const getHoursValue = (decEl, hEl, mEl) => {
+            if (elements.hourInputMode.value === 'decimal') {
+                return parseFloat(decEl.value) || 0;
+            }
+            return (parseFloat(hEl.value) || 0) + (parseFloat(mEl.value) || 0) / 60;
+        };
+
         let makanaiCost = 0, makanaiCount = 0;
         if (state.settings.mode === 'my_standard') {
             const MAKANAI_COST_PER_MEAL = 120;
@@ -448,11 +446,16 @@ document.addEventListener('DOMContentLoaded', () => {
             }
         }
         state.monthlyData[targetMonth] = {
-            days: parseInt(elements.workDaysInput.value) || 0, totalHours: getHoursFromInput('total'),
-            regularNightHours: getHoursFromInput('regularNight'), specialHours: getHoursFromInput('special'),
-            specialNightHours: getHoursFromInput('specialNight'), specialHourlyWage: parseFloat(elements.specialHourlyWage.value) || 0,
-            otherPayAmount: parseFloat(elements.otherPayAmount.value) || 0, otherPayNote: elements.otherPayNote.value || '',
-            makanaiCost, makanaiCount, settings: { ...state.settings }
+            days: parseInt(elements.workDaysInput.value) || 0,
+            totalHours: getHoursValue(elements.totalDecimalHours, elements.totalHHours, elements.totalMMinutes),
+            regularNightHours: getHoursValue(elements.regularNightDecimalHours, elements.regularNightHHours, elements.regularNightMMinutes),
+            specialHours: getHoursValue(elements.specialDecimalHours, elements.specialHHours, elements.specialMMinutes),
+            specialNightHours: getHoursValue(elements.specialNightDecimalHours, elements.specialNightHHours, elements.specialNightMMinutes),
+            specialHourlyWage: parseFloat(elements.specialHourlyWage.value) || 0,
+            otherPayAmount: parseFloat(elements.otherPayAmount.value) || 0,
+            otherPayNote: elements.otherPayNote.value || '',
+            makanaiCost, makanaiCount,
+            settings: { ...state.settings }
         };
         saveData(); alert(`${targetMonth} のデータを登録・更新しました。`); setupMainUI();
     };
