@@ -419,7 +419,7 @@ document.addEventListener('DOMContentLoaded', () => {
                 datasets.push({ type: 'bar', label: labels[target], data: chartData[target], backgroundColor: colors[target].bg, borderColor: colors[target].border, yAxisID: target === 'days' ? 'y-days' : 'y-amount', borderWidth: 1 });
             }
         }
-        const options = { responsive: true, maintainAspectRatio: false, scales: { 'y-amount': { type: 'linear', display: true, position: 'left', title: { display: true, text: '金額 (円)' }, ticks: { callback: value => `${value/10000}万` }}, 'y-days': { type: 'linear', display: true, position: 'right', title: { display: true, text: '日数 (日)' }, grid: { drawOnChartArea: false }, ticks: { stepSize: 1 } } } };
+        const options = { responsive: true, maintainAspectRatio: false, scales: { 'y-amount': { type: 'linear', display: true, position: 'left', title: { display: true, text: '金額 (円)' }, ticks: { callback: value => `${value/10000}万` }, beginAtZero: true }, 'y-days': { type: 'linear', display: true, position: 'right', title: { display: true, text: '日数 (日)' }, grid: { drawOnChartArea: false }, ticks: { stepSize: 1 }, beginAtZero: true } } };
         if (chartInstance) chartInstance.destroy();
         chartInstance = new Chart(elements.salaryChart, { type: 'bar', data: { labels: chartData.labels, datasets }, options });
     };
@@ -464,30 +464,33 @@ document.addEventListener('DOMContentLoaded', () => {
         
         if (data) {
             elements.workDaysInput.value = data.days || '';
+
+            const getHourParts = (hours) => {
+                const h = hours || 0;
+                if (h <= 0) return { dec: '', hr: '', min: '' };
+                const floorH = Math.floor(h);
+                return { dec: h.toFixed(2), hr: floorH, min: Math.round((h - floorH) * 60) };
+            };
+
+            const totalParts = getHourParts(data.totalHours);
+            elements.totalDecimalHours.value = totalParts.dec;
+            elements.totalHHours.value = totalParts.hr;
+            elements.totalMMinutes.value = totalParts.min;
+
+            const regularNightParts = getHourParts(data.regularNightHours);
+            elements.regularNightDecimalHours.value = regularNightParts.dec;
+            elements.regularNightHHours.value = regularNightParts.hr;
+            elements.regularNightMMinutes.value = regularNightParts.min;
             
-            const totalH = data.totalHours || 0;
-            const totalH_floor = Math.floor(totalH);
-            elements.totalDecimalHours.value = totalH > 0 ? totalH.toFixed(2) : '';
-            elements.totalHHours.value = totalH > 0 ? totalH_floor : '';
-            elements.totalMMinutes.value = totalH > 0 ? Math.round((totalH - totalH_floor) * 60) : '';
+            const specialParts = getHourParts(data.specialHours);
+            elements.specialDecimalHours.value = specialParts.dec;
+            elements.specialHHours.value = specialParts.hr;
+            elements.specialMMinutes.value = specialParts.min;
 
-            const regularNightH = data.regularNightHours || 0;
-            const regularNightH_floor = Math.floor(regularNightH);
-            elements.regularNightDecimalHours.value = regularNightH > 0 ? regularNightH.toFixed(2) : '';
-            elements.regularNightHHours.value = regularNightH > 0 ? regularNightH_floor : '';
-            elements.regularNightMMinutes.value = regularNightH > 0 ? Math.round((regularNightH - regularNightH_floor) * 60) : '';
-
-            const specialH = data.specialHours || 0;
-            const specialH_floor = Math.floor(specialH);
-            elements.specialDecimalHours.value = specialH > 0 ? specialH.toFixed(2) : '';
-            elements.specialHHours.value = specialH > 0 ? specialH_floor : '';
-            elements.specialMMinutes.value = specialH > 0 ? Math.round((specialH - specialH_floor) * 60) : '';
-
-            const specialNightH = data.specialNightHours || 0;
-            const specialNightH_floor = Math.floor(specialNightH);
-            elements.specialNightDecimalHours.value = specialNightH > 0 ? specialNightH.toFixed(2) : '';
-            elements.specialNightHHours.value = specialNightH > 0 ? specialNightH_floor : '';
-            elements.specialNightMMinutes.value = specialNightH > 0 ? Math.round((specialNightH - specialNightH_floor) * 60) : '';
+            const specialNightParts = getHourParts(data.specialNightHours);
+            elements.specialNightDecimalHours.value = specialNightParts.dec;
+            elements.specialNightHHours.value = specialNightParts.hr;
+            elements.specialNightMMinutes.value = specialNightParts.min;
 
             elements.specialHourlyWage.value = data.specialHourlyWage || '';
             elements.otherPayAmount.value = data.otherPayAmount || '';
