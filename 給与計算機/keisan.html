@@ -350,8 +350,8 @@ document.addEventListener('DOMContentLoaded', () => {
             let rowHTML = `<td>${i}月</td>`;
             if (data) {
                 const isMyStandard = data.settings.mode === 'my_standard';
-                const baseWage = isMyStandard ? getMyStandardHourlyWage(monthKey) : (data.settings.hourlyWage || 0);
-                const nightPremiumRate = isMyStandard ? 0.25 : ((data.settings.nightPremium || 0) / 100);
+                const baseWage = isMyStandard ? getMyStandardHourlyWage(monthKey) : (state.settings.hourlyWage || 0);
+                const nightPremiumRate = isMyStandard ? 0.25 : ((state.settings.nightPremium || 0) / 100);
                 const specialHours = data.specialHours || 0, specialNightHours = data.specialNightHours || 0, specialWage = data.specialHourlyWage || 0;
                 const regularTotalHours = Math.max(0, data.totalHours - specialHours), regularNightHours = data.regularNightHours || 0;
                 const regularPay = regularTotalHours * baseWage + regularNightHours * baseWage * nightPremiumRate;
@@ -359,7 +359,7 @@ document.addEventListener('DOMContentLoaded', () => {
                 const otherPay = data.otherPayAmount || 0;
                 const gross = regularPay + specialPay + otherPay;
                 const makanaiCost = isMyStandard ? (data.makanaiCost || 0) : 0;
-                const unionFee = isMyStandard ? calculateMyStandardUnionFee(gross, monthKey === firstMonthKey) : (data.settings.unionFee || 0);
+                const unionFee = isMyStandard ? calculateMyStandardUnionFee(gross, monthKey === firstMonthKey) : (state.settings.unionFee || 0);
                 const net = gross - makanaiCost - unionFee;
                 rowHTML += `<td>${data.days}日</td><td>${formatHours(data.totalHours)}</td><td>${formatCurrency(gross)}円</td><td class="deduction-col">${formatCurrency(makanaiCost)}円/${data.makanaiCount || 0}回</td><td class="deduction-col">${formatCurrency(unionFee)}円</td><td>${formatCurrency(net)}円</td>`;
                 totals.days += data.days; totals.hours += data.totalHours; totals.gross += gross; totals.makanai += makanaiCost; totals.union += unionFee; totals.net += net;
@@ -397,8 +397,8 @@ document.addEventListener('DOMContentLoaded', () => {
             chartData.labels.push(`${i}月`);
             if (data) {
                 const isMyStandard = data.settings.mode === 'my_standard';
-                const baseWage = isMyStandard ? getMyStandardHourlyWage(monthKey) : (data.settings.hourlyWage || 0);
-                const nightPremiumRate = isMyStandard ? 0.25 : ((data.settings.nightPremium || 0) / 100);
+                const baseWage = isMyStandard ? getMyStandardHourlyWage(monthKey) : (state.settings.hourlyWage || 0);
+                const nightPremiumRate = isMyStandard ? 0.25 : ((state.settings.nightPremium || 0) / 100);
                 const specialHours = data.specialHours || 0, specialNightHours = data.specialNightHours || 0, specialWage = data.specialHourlyWage || 0;
                 const regularTotalHours = Math.max(0, data.totalHours - specialHours), regularNightHours = data.regularNightHours || 0;
                 const regularPay = regularTotalHours * baseWage + regularNightHours * baseWage * nightPremiumRate;
@@ -406,7 +406,7 @@ document.addEventListener('DOMContentLoaded', () => {
                 const otherPay = data.otherPayAmount || 0;
                 const gross = regularPay + specialPay + otherPay;
                 const makanaiCost = isMyStandard ? (data.makanaiCost || 0) : 0;
-                const unionFee = isMyStandard ? calculateMyStandardUnionFee(gross, false) : (data.settings.unionFee || 0);
+                const unionFee = isMyStandard ? calculateMyStandardUnionFee(gross, false) : (state.settings.unionFee || 0);
                 const net = gross - makanaiCost - unionFee;
                 chartData.gross.push(gross); chartData.net.push(net); chartData.days.push(data.days || 0);
             } else { chartData.gross.push(null); chartData.net.push(null); chartData.days.push(null); }
@@ -461,10 +461,8 @@ document.addEventListener('DOMContentLoaded', () => {
         const targetMonth = elements.targetMonthInput.value;
         const data = state.monthlyData[targetMonth];
         const fieldsToReset = ['workDaysInput', 'totalDecimalHours', 'totalHHours', 'totalMMinutes', 'regularNightDecimalHours', 'regularNightHHours', 'regularNightMMinutes', 'specialDecimalHours', 'specialHHours', 'specialMMinutes', 'specialHourlyWage', 'specialNightDecimalHours', 'specialNightHHours', 'specialNightMMinutes', 'otherPayAmount', 'otherPayNote', 'makanaiCount', 'makanaiAmount'];
-        
         if (data) {
             elements.workDaysInput.value = data.days || '';
-
             const getHourParts = (hours) => {
                 const h = hours || 0;
                 if (h <= 0) return { dec: '', hr: '', min: '' };
@@ -524,9 +522,9 @@ document.addEventListener('DOMContentLoaded', () => {
         });
     });
 
-    elements.manualHourlyWage.addEventListener('input', (e) => { state.settings.hourlyWage = parseFloat(e.target.value) || 0; saveData(); });
-    elements.manualNightPremium.addEventListener('input', (e) => { state.settings.nightPremium = parseFloat(e.target.value) || 0; saveData(); });
-    elements.manualUnionFee.addEventListener('input', (e) => { state.settings.unionFee = parseFloat(e.target.value) || 0; saveData(); });
+    elements.manualHourlyWage.addEventListener('input', () => { state.settings.hourlyWage = parseFloat(elements.manualHourlyWage.value) || 0; saveData(); renderTableAndChart(); });
+    elements.manualNightPremium.addEventListener('input', () => { state.settings.nightPremium = parseFloat(elements.manualNightPremium.value) || 0; saveData(); renderTableAndChart(); });
+    elements.manualUnionFee.addEventListener('input', () => { state.settings.unionFee = parseFloat(elements.manualUnionFee.value) || 0; saveData(); renderTableAndChart(); });
     
     elements.hourInputMode.addEventListener('change', updateHourInputUI);
     elements.makanaiInputMode.addEventListener('change', updateMakanaiInputUI);
