@@ -295,6 +295,7 @@ document.addEventListener('DOMContentLoaded', () => {
         elements.manualUnionFee.value = state.settings.unionFee;
         updateHourInputUI(); updateMakanaiInputUI(); updateGraphControlsUI();
         populateYearFilter(); renderTableAndChart();
+        loadDataIntoForm();
     };
 
     const updateGraphControlsUI = () => {
@@ -460,19 +461,34 @@ document.addEventListener('DOMContentLoaded', () => {
         const targetMonth = elements.targetMonthInput.value;
         const data = state.monthlyData[targetMonth];
         const fieldsToReset = ['workDaysInput', 'totalDecimalHours', 'totalHHours', 'totalMMinutes', 'regularNightDecimalHours', 'regularNightHHours', 'regularNightMMinutes', 'specialDecimalHours', 'specialHHours', 'specialMMinutes', 'specialHourlyWage', 'specialNightDecimalHours', 'specialNightHHours', 'specialNightMMinutes', 'otherPayAmount', 'otherPayNote', 'makanaiCount', 'makanaiAmount'];
+        
         if (data) {
             elements.workDaysInput.value = data.days || '';
-            const setHourInputs = (type, hoursValue) => {
-                const hours = hoursValue || 0;
-                const prefix = type.replace('Hours', '');
-                document.getElementById(`${prefix}-decimal-hours`).value = hours > 0 ? hours.toFixed(2) : '';
-                document.getElementById(`${prefix}-h-hours`).value = hours > 0 ? Math.floor(hours) : '';
-                document.getElementById(`${prefix}-m-minutes`).value = hours > 0 ? Math.round((hours - Math.floor(hours)) * 60) : '';
-            };
-            setHourInputs('total', data.totalHours);
-            setHourInputs('regularNight', data.regularNightHours);
-            setHourInputs('special', data.specialHours);
-            setHourInputs('specialNight', data.specialNightHours);
+            
+            const totalH = data.totalHours || 0;
+            const totalH_floor = Math.floor(totalH);
+            elements.totalDecimalHours.value = totalH > 0 ? totalH.toFixed(2) : '';
+            elements.totalHHours.value = totalH > 0 ? totalH_floor : '';
+            elements.totalMMinutes.value = totalH > 0 ? Math.round((totalH - totalH_floor) * 60) : '';
+
+            const regularNightH = data.regularNightHours || 0;
+            const regularNightH_floor = Math.floor(regularNightH);
+            elements.regularNightDecimalHours.value = regularNightH > 0 ? regularNightH.toFixed(2) : '';
+            elements.regularNightHHours.value = regularNightH > 0 ? regularNightH_floor : '';
+            elements.regularNightMMinutes.value = regularNightH > 0 ? Math.round((regularNightH - regularNightH_floor) * 60) : '';
+
+            const specialH = data.specialHours || 0;
+            const specialH_floor = Math.floor(specialH);
+            elements.specialDecimalHours.value = specialH > 0 ? specialH.toFixed(2) : '';
+            elements.specialHHours.value = specialH > 0 ? specialH_floor : '';
+            elements.specialMMinutes.value = specialH > 0 ? Math.round((specialH - specialH_floor) * 60) : '';
+
+            const specialNightH = data.specialNightHours || 0;
+            const specialNightH_floor = Math.floor(specialNightH);
+            elements.specialNightDecimalHours.value = specialNightH > 0 ? specialNightH.toFixed(2) : '';
+            elements.specialNightHHours.value = specialNightH > 0 ? specialNightH_floor : '';
+            elements.specialNightMMinutes.value = specialNightH > 0 ? Math.round((specialNightH - specialNightH_floor) * 60) : '';
+
             elements.specialHourlyWage.value = data.specialHourlyWage || '';
             elements.otherPayAmount.value = data.otherPayAmount || '';
             elements.otherPayNote.value = data.otherPayNote || '';
