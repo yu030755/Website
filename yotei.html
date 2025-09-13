@@ -1,0 +1,82 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+    <meta charset="UTF-8">
+    <title>予定管理アプリ</title>
+</head>
+<body>
+
+    <h2>パスワードを入力してください</h2>
+    <input type="text" id="userInput" placeholder="コードを入力">
+    <button onclick="createIframe()">カレンダーを表示</button>
+    <hr>
+    <div id="iframeContainer"></div>
+
+    <hr>
+    <div style="text-align: center;">
+        <h2>持ち物確認</h2>
+        <label for="scheduleSelect"><strong>今日は何する？</strong></label>
+        <select id="scheduleSelect" onchange="generateChecklist()">
+            <option value="">-- 予定を選択 --</option>
+            <option value="hospital">病院</option>
+            <option value="shopping">予備</option>
+            <option value="work">予備</option>
+        </select>
+
+        <div id="checklistContainer" style="margin-top: 1em; display: inline-block; text-align: left;"></div>
+    </div>
+    <script>
+        // --- 既存のカレンダー表示機能（変更なし） ---
+        window.onload = function() {
+            const savedCode = localStorage.getItem('calendarCode');
+            if (savedCode) {
+                document.getElementById('userInput').value = savedCode;
+                createIframe();
+            }
+        };
+
+        function createIframe() {
+            const inputtedCode = document.getElementById('userInput').value;
+            localStorage.setItem('calendarCode', inputtedCode);
+
+            const url_part1 = "https://calendar.google.com/calendar/embed?height=600&wkst=1&ctz=Asia%2FTokyo&showPrint=0&showTitle=0&showTz=0&mode=AGENDA&showCalendars=0&src=amEuamFwYW5lc2UjaG9saWRheUBncm91cC52LmNhbGVuZGFyLmdvb2dsZS5jb20&src=cHVzbTQ1c";
+            const url_part2 = "yaGk4MjA1bTV2ZHBsNDI4ZG1zOThAaW1wb3J0LmNhbGVuZGFyLmdvb2dsZS5jb20&color=%230b8043&color=%23e67c73";
+            const finalUrl = url_part1 + inputtedCode + url_part2;
+
+            const iframeTag = '<iframe src="' + finalUrl + '" style="border-width:0" width="600" height="600" frameborder="0" scrolling="no"></iframe>';
+            document.getElementById('iframeContainer').innerHTML = iframeTag;
+        }
+
+        // --- ★ここから新しい持ち物チェック機能 ---
+
+        // 予定ごとの持ち物リストを定義
+        const itemLists = {
+            hospital: ['保険証', '診察券', 'お薬手帳'],
+            shopping: ['空欄', '空欄', '空欄'],
+            work: ['空欄', '空欄', '空欄']
+        };
+
+        // プルダウンが変更されたときに呼ばれる関数
+        function generateChecklist() {
+            const select = document.getElementById('scheduleSelect');
+            const selectedValue = select.value;
+            const checklistContainer = document.getElementById('checklistContainer');
+
+            // 表示をリセット
+            checklistContainer.innerHTML = '';
+            if (!selectedValue) { return; }
+
+            // 選択された予定に対応する持ち物リストを取得
+            const items = itemLists[selectedValue];
+            let html = '';
+            items.forEach((item, index) => {
+                const checkboxId = `item-${index}`;
+                // 各項目をdivで囲み、改行して表示
+                html += `<div><input type="checkbox" id="${checkboxId}"><label for="${checkboxId}">${item}</label></div>`;
+            });
+            checklistContainer.innerHTML = html;
+        }
+    </script>
+
+</body>
+</html>
