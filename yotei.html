@@ -19,7 +19,7 @@
         <select id="scheduleSelect" onchange="generateChecklist()">
             <option value="">-- 予定を選択 --</option>
             <option value="hospital">病院</option>
-            <option value="shopping">予備</option>
+            <option value="school">学校</option>
             <option value="work">予備</option>
         </select>
 
@@ -51,8 +51,8 @@
 
         // 予定ごとの持ち物リストを定義
         const itemLists = {
-            hospital: ['保険証', '診察券', 'お薬手帳'],
-            shopping: ['空欄', '空欄', '空欄'],
+            hospital: ['保険証', '診察券', 'マスク', '自立支援医療受給証', '自己負担上限管理表'],
+            school: ['筆箱', 'パソコン', '財布'],
             work: ['空欄', '空欄', '空欄']
         };
 
